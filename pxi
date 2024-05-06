@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import nidcpower
 import numpy as np
 import openpyxl
@@ -8,52 +6,66 @@ import time
 from collections import deque
 import matplotlib.pyplot as plt
 import pandas as pd
-import multiprocessing
 
 start = time.time()
+queue = deque(maxlen=1800000)
 count1 = []
 count2 = 0
 min_values = []
 max_values = []
 mean_values = []
 data = []
-count3 = 90
+lock = threading.Lock()
 
-def meas(queue):
-    global mean_values, max_values, min_values, count3
-    for _ in range(11):
-        if len(queue) == 1800000:
-            mean_value = np.mean(queue)
-            max_value = np.max(queue)
-            min_value = np.min(queue)
-            min_values.append(min_value)
-            max_values.append(max_value)
-            mean_values.append(mean_value)
-            log(queue)
-            update_plot()
+def meas():
+    global mean_value, max_value, min_value
+    lock.acquire()
+    try:
+        mean_value = np.mean(queue)
+        max_value = np.max(queue)
+        min_value = np.min(queue)
+        min_values.append(min_value)
+        max_values.append(max_value)
+        mean_values.append(mean_value)
+        thread2 = threading.Thread(target=log)
+        thread2.start()
+        update_plot()
+    finally:
+        lock.release()
 
-def log(queue):
+def log():
     global count3
-    count3 += 1
-    data = list(queue)[900000:]
-    df = pd.DataFrame(data)
-    df.to_excel('e{}.xlsx'.format(count3), index=False)
+    lock.acquire()
+    try:
+        count3+=1
+        data = []
+        for values in queue:
+            data.append(values)
+        df = pd.DataFrame(data[900000:])
+        df.to_excel('e{}.xlsx'.format(count3),index=False)
+    finally:
+        lock.release()
 
 def update_plot():
     global count2
-    count1.append(count2)
-    count2 += 1
-    plt.plot(count1, min_values, label='Min Value', color='red')
-    plt.plot(count1, max_values, label='Max Value', color='green')
-    plt.plot(count1, mean_values, label='Mean Value', color='blue')
-    plt.xlabel('Seconds')
-    plt.ylabel('Current')
-    plt.legend()
-    plt.pause(0.01)  # Pause to allow the plot to update
+    lock.acquire()
+    try:
+        count1.append(count2)
+        count2 += 1
+        plt.plot(count1, min_values, label='Min Value',color='red')
+        plt.plot(count1, max_values, label='Max Value',color='green')
+        plt.plot(count1, mean_values, label='Mean Value',color='blue')
+        plt.xlabel('Seconds')
+        plt.ylabel('Current')
+        plt.legend()
+        plt.pause(0.01)  # Pause to allow the plot to update
+    finally:
+        lock.release()
 
-def example(queue):
-    for i in range(11):
-        with nidcpower.Session(resource_name='Dev1', options={'simulate': False, 'driver_setup': {'Model': '4145', 'BoardType': 'PXIe'}}) as session:
+def example():
+    global measurements
+    while True:
+        with nidcpower.Session(resource_name='Dev1', options=options) as session:
             session.measure_record_length = 1800000
             session.aperture_time = 0.00000055556
             session.source_mode = nidcpower.SourceMode.SINGLE_POINT
@@ -66,27 +78,23 @@ def example(queue):
             with session.initiate():
                 measurements = session.channels['Dev1/0'].fetch_multiple(count=200000)
                 for value in [x[0] for x in measurements]:
-                    queue.append(value)
+                    lock.acquire()
+                    try:
+                        queue.append(value)
+                    finally:
+                        lock.release()
+                if len(queue) >= 1800000:
+                    meas()
 
 if __name__ == '__main__':
-    # Create a multiprocessing manager to share data between processes
-    manager = multiprocessing.Manager()
-    queue = manager.list()
-
-    # Create processes
-    p1 = multiprocessing.Process(target=example, args=(queue,))
-    p2 = multiprocessing.Process(target=meas, args=(queue,))
-
-    # Start processes
-    p1.start()
-    p2.start()
-
-    # Join processes
-    p1.join()
-    p2.join()
-
+    global options
+    options = {'simulate': False, 'driver_setup': {'Model': '4145', 'BoardType': 'PXIe', }, }
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(['Min', 'Max', 'Average'])
+    thread5 = threading.Thread(target=example)
+    thread5.start()
     end = time.time()
     print(end - start)
-
     plt.ion()
     plt.show()  # Show the plot after all iterations

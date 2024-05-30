@@ -1,0 +1,53 @@
+import subprocess
+import os
+
+def run_powershell_script(script):
+    process = subprocess.Popen(["powershell.exe", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    return stdout.decode(), stderr.decode()
+
+def get_disk_number(disk_name):
+    script = f"(Get-Disk | Where-Object -FilterScript {{$_.FriendlyName -eq '{disk_name}'}}).Number"
+    stdout, stderr = run_powershell_script(script)
+    if stderr:
+        raise Exception(f"Error getting disk number: {stderr.strip()}")
+    return int(stdout.strip())
+
+def run_diskpart_script(script):
+    with open('diskpart_script.txt', 'w') as file:
+        file.write(script)
+    result = subprocess.run(['diskpart', '/s', 'diskpart_script.txt'], capture_output=True, text=True)
+    os.remove('diskpart_script.txt')
+    return result.stdout
+
+def check_if_raw(disk_number):
+    script = f"select disk {disk_number}\n detail disk\n"
+    output = run_diskpart_script(script)
+    return 'There are no volumes' in output
+
+def clean_and_make_raw(disk_number):
+    script = f"""
+    select disk {disk_number}
+    clean
+    """
+    run_diskpart_script(script)
+
+def create_volume(disk_number):
+    script = f"""
+    select disk {disk_number}
+    create partition primary
+    """
+    run_diskpart_script(script)
+
+def main():
+    disk_name = "YourDiskName"  # Replace with your actual disk name
+    disk_number = get_disk_number(disk_name)
+    
+    if check_if_raw(disk_number):
+        create_volume(disk_number)
+    
+    clean_and_make_raw(disk_number)
+    print(f"Disk '{disk_name}' (Disk Number: {disk_number}) has been cleaned and made raw again.")
+
+if __name__ == "__main__":
+    main()

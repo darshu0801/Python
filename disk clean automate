@@ -1,23 +1,16 @@
 import subprocess
-import os
-
-def run_powershell_script(script):
-    process = subprocess.Popen(["powershell.exe", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    return stdout.decode(), stderr.decode()
-
-def get_disk_number(disk_name):
-    script = f"(Get-Disk | Where-Object -FilterScript {{$_.FriendlyName -eq '{disk_name}'}}).Number"
-    stdout, stderr = run_powershell_script(script)
-    if stderr:
-        raise Exception(f"Error getting disk number: {stderr.strip()}")
-    return int(stdout.strip())
 
 def run_diskpart_script(script):
+    # Write the diskpart commands to a temporary file
     with open('diskpart_script.txt', 'w') as file:
         file.write(script)
+    
+    # Execute the diskpart script
     result = subprocess.run(['diskpart', '/s', 'diskpart_script.txt'], capture_output=True, text=True)
+    
+    # Remove the temporary file
     os.remove('diskpart_script.txt')
+    
     return result.stdout
 
 def check_if_raw(disk_number):
@@ -40,52 +33,13 @@ def create_volume(disk_number):
     run_diskpart_script(script)
 
 def main():
-    disk_name = "YourDiskName"  # Replace with your actual disk name
-    disk_number = get_disk_number(disk_name)
+    disk_number = 1  # Replace with your actual disk number
     
     if check_if_raw(disk_number):
         create_volume(disk_number)
     
     clean_and_make_raw(disk_number)
-    print(f"Disk '{disk_name}' (Disk Number: {disk_number}) has been cleaned and made raw again.")
+    print(f"Disk {disk_number} has been cleaned and made raw again.")
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-# Replace "DiskName" with the actual name of your disk
-$diskName = "DiskName"
-
-# Get the disk object that matches the disk name
-$disk = Get-Disk | Where-Object { $_.FriendlyName -like "*$diskName*" }
-
-if ($disk) {
-    # Output the disk number(s)
-    $disk | ForEach-Object {
-        Write-Output "Disk Name: $($_.FriendlyName), Disk Number: $($_.Number)"
-    }
-} else {
-    Write-Output "No disk found with the name '$diskName'."
-}
-
-
-
-
-# Replace "DiskName" with the actual name of your disk
-$diskName = "DiskName"
-
-# Get the disk object that matches the disk name
-$disk = Get-Disk | Where-Object { $_.FriendlyName -like "*$diskName*" }
-
-if ($disk) {
-    # Output the disk number(s)
-    $disk | ForEach-Object {
-        Write-Output "Disk Name: $($_.FriendlyName), Disk Number: $($_.Number)"
-    }
-} else {
-    Write-Output "No disk found with the name '$diskName'."
-}

@@ -1,0 +1,18 @@
+import pygetwindow as gw
+from pywinauto.application import Application
+
+def minimize_window_by_exe(exe_name):
+    # List all windows
+    windows = gw.getWindowsWithTitle('')
+    for window in windows:
+        # Match the window title with the executable name
+        if exe_name.lower() in window.title.lower():
+            # Connect to the application and minimize the window
+            app = Application().connect(handle=window._hWnd)
+            app.window(handle=window._hWnd).minimize()
+            print(f"Window with title '{window.title}' minimized.")
+            return
+    print(f"No window found for executable: {exe_name}")
+
+# Replace 'notepad.exe' with the executable name you want to minimize
+minimize_window_by_exe('notepad.exe')

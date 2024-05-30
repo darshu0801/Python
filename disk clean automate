@@ -51,3 +51,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+# Replace "DiskName" with the actual name of your disk
+$diskName = "DiskName"
+
+# Get the disk object that matches the disk name
+$disk = Get-Disk | Where-Object { $_.FriendlyName -like "*$diskName*" }
+
+if ($disk) {
+    # Output the disk number(s)
+    $disk | ForEach-Object {
+        Write-Output "Disk Name: $($_.FriendlyName), Disk Number: $($_.Number)"
+    }
+} else {
+    Write-Output "No disk found with the name '$diskName'."
+}

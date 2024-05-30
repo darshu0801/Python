@@ -1,3 +1,4 @@
+
 import time
 import win32com.client
 
@@ -7,6 +8,34 @@ def get_smart_temperature():
         service = wmi.ConnectServer(".", "root\wmi")
         temperature_infos = service.ExecQuery("SELECT * FROM MSAcpi_ThermalZoneTemperature")
         
+        for temp_info in temperature_infos:
+            # Convert temperature to Celsius
+            temperature = (temp_info.CurrentTemperature / 10.0) - 273.15
+            return temperature
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
+def monitor_temperature(interval=1):
+    while True:
+        temperature = get_smart_temperature()
+        if temperature is not None:
+            print(f"Temperature: {temperature:.2f}°C")
+        time.sleep(interval)
+
+if __name__ == "__main__":
+    monitor_temperature()
+
+
+
+
+import time
+import wmi
+
+def get_smart_temperature():
+    try:
+        w = wmi.WMI(namespace="root\wmi")
+        temperature_infos = w.MSAcpi_ThermalZoneTemperature()
         for temp_info in temperature_infos:
             # Convert temperature to Celsius
             temperature = (temp_info.CurrentTemperature / 10.0) - 273.15

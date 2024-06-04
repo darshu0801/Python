@@ -38,3 +38,46 @@ while True:
 
     # Wait for 1 second before repeating
     time.sleep(1)
+
+
+
+
+
+
+import subprocess
+import pandas as pd
+import time
+from openpyxl import load_workbook
+import os
+
+def log_to_excel(values, filename="output.xlsx"):
+    df = pd.DataFrame([values], columns=["Column1", "Column2", "Column3"])
+
+    if not os.path.exists(filename):
+        # If the file does not exist, create it and write the data
+        df.to_excel(filename, index=False)
+    else:
+        # Load the existing workbook
+        book = load_workbook(filename)
+        with pd.ExcelWriter(filename, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
+            writer.book = book
+            # Get the last row in the existing Excel sheet
+            sheet = writer.sheets['Sheet1']
+            start_row = sheet.max_row
+
+            # Write new data after the last row
+            df.to_excel(writer, startrow=start_row, header=False, index=False)
+
+while True:
+    # Call the PowerShell script and capture the output
+    result = subprocess.run(["powershell", "-File", "script.ps1"], capture_output=True, text=True)
+
+    # Process the output (assuming the output is a comma-separated string)
+    output = result.stdout.strip()
+    values = output.split(",")
+
+    # Log the values to an Excel file
+    log_to_excel(values)
+
+    # Wait for 1 second before repeating
+    time.sleep(1)

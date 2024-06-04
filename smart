@@ -1,0 +1,40 @@
+import subprocess
+import pandas as pd
+import time
+from openpyxl import load_workbook
+import os
+
+def log_to_excel(values, filename="output.xlsx"):
+    # Check if the file exists
+    if os.path.exists(filename):
+        # Load the existing workbook
+        book = load_workbook(filename)
+        writer = pd.ExcelWriter(filename, engine='openpyxl')
+        writer.book = book
+        writer.sheets = {ws.title: ws for ws in book.worksheets}
+        
+        # Read the existing data
+        start_row = writer.sheets['Sheet1'].max_row
+        
+        # Write new data without removing the existing data
+        df = pd.DataFrame([values])
+        df.to_excel(writer, startrow=start_row, header=False, index=False)
+        writer.save()
+    else:
+        # If the file does not exist, create it and write the data
+        df = pd.DataFrame([values], columns=["Column1", "Column2", "Column3"])
+        df.to_excel(filename, index=False)
+
+while True:
+    # Call the PowerShell script and capture the output
+    result = subprocess.run(["powershell", "-File", "script.ps1"], capture_output=True, text=True)
+
+    # Process the output (assuming the output is a comma-separated string)
+    output = result.stdout.strip()
+    values = output.split(",")
+
+    # Log the values to an Excel file
+    log_to_excel(values)
+
+    # Wait for 1 second before repeating
+    time.sleep(1)

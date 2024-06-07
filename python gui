@@ -1,0 +1,53 @@
+import sys
+import random
+import time
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QProgressBar
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+
+class VariableUpdateThread(QThread):
+    value_changed = pyqtSignal(int)
+
+    def __init__(self, max_value):
+        super().__init__()
+        self.max_value = max_value
+
+    def run(self):
+        while True:
+            value = random.randint(0, self.max_value)
+            self.value_changed.emit(value)
+            time.sleep(1)
+
+class TankWidget(QWidget):
+    def __init__(self, fixed_value):
+        super().__init__()
+        self.fixed_value = fixed_value
+        self.init_ui()
+        self.start_updating()
+
+    def init_ui(self):
+        self.setWindowTitle("Tank Filling Simulation")
+        self.setGeometry(100, 100, 200, 400)
+
+        self.layout = QVBoxLayout()
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setMaximum(self.fixed_value)
+        self.progress_bar.setAlignment(Qt.AlignCenter)
+        self.progress_bar.setOrientation(Qt.Vertical)
+
+        self.layout.addWidget(self.progress_bar)
+        self.setLayout(self.layout)
+
+    def start_updating(self):
+        self.update_thread = VariableUpdateThread(self.fixed_value)
+        self.update_thread.value_changed.connect(self.update_tank)
+        self.update_thread.start()
+
+    def update_tank(self, value):
+        self.progress_bar.setValue(value)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    fixed_value = 300  # Fixed height of the tank
+    window = TankWidget(fixed_value)
+    window.show()
+    sys.exit(app.exec_())

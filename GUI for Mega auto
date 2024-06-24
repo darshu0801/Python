@@ -1,5 +1,4 @@
-global threshold
-threshold = 0
+import tkinter as tk
 
 class LiquidTank:
     def __init__(self, max_capacity):
@@ -9,12 +8,12 @@ class LiquidTank:
         self.window.title("SSD Storage Information")
         self.canvas = tk.Canvas(self.window, width=600, height=100)
         self.canvas.pack()
-        
+
         # Define the tank dimensions
         self.tank_width = 500
         self.tank_outline = self.canvas.create_rectangle((50, 10), (550, 50), outline='black', width=3)
         self.liquid_level = self.canvas.create_rectangle((50, 10), (50, 50), fill='blue')
-        self.liquid_level1 = self.canvas.create_rectangle((50, 10), (50, 50), fill='red')
+
         self.max_label = tk.Label(self.window, text=f"Max Capacity(MB): {self.max_capacity}")
         self.max_label.pack()
         self.current_label = tk.Label(self.window, text=f"Current Data(MB): {self.current_data}")
@@ -28,12 +27,23 @@ class LiquidTank:
     def update_liquid_level(self):
         filling_ratio = min(self.current_data / self.max_capacity, 1)
         filling_width = filling_ratio * self.tank_width
-        #print(threshold)
-        if threshold !=0:
-            if (self.current_data > threshold - 100) and (self.current_data < threshold + 100):
-                self.canvas.coords(self.liquid_level, 50, 10, 50 + filling_width, 50)
+
+        # Update the color based on the filling ratio
+        if filling_ratio < 0.3:
+            color = 'blue'
+        elif filling_ratio < 0.7:
+            color = 'yellow'
         else:
-            self.canvas.coords(self.liquid_level1, 50, 10, 50 + filling_width, 50)
+            color = 'red'
+
+        self.canvas.itemconfig(self.liquid_level, fill=color)
+        self.canvas.coords(self.liquid_level, 50, 10, 50 + filling_width, 50)
 
     def start(self):
         self.window.mainloop()
+
+# Example usage:
+if __name__ == "__main__":
+    tank = LiquidTank(1000)
+    tank.update_data(500)  # Update with some test data
+    tank.start()

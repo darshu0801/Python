@@ -1,5 +1,8 @@
 import pyautogui
-import time , re , os , shutil
+import time
+import re
+import os
+import shutil
 from pywinauto.application import Application
 import subprocess
 import matplotlib.pyplot as plt
@@ -25,7 +28,7 @@ input_params = {"first_capacity":"",
 total_drive_size = 0
 GB_TO_KB = 1024 * 1024 * 1024
 back_process = None
-macro = 100 #300
+macro = 100  # 300
 
 class LiquidTank:
     def __init__(self, max_capacity):
@@ -55,24 +58,21 @@ class LiquidTank:
 
     def start(self):
         self.window.mainloop()
-        
+
+
 def run_diskpart_script(script):
-    # Write the diskpart commands to a temporary file
     with open('diskpart_script.txt', 'w') as file:
         file.write(script)
-    
-    # Execute the diskpart script
     result = subprocess.run(['diskpart', '/s', 'diskpart_script.txt'], capture_output=True, text=True)
-    
-    # Remove the temporary file
     os.remove('diskpart_script.txt')
-    
     return result.stdout
+
 
 def check_if_raw(disk_number):
     script = f"select disk {disk_number}\n detail disk\n"
     output = run_diskpart_script(script)
     return 'There are no volumes' in output
+
 
 def clean_and_make_raw(disk_number):
     script = f"""
@@ -80,6 +80,7 @@ def clean_and_make_raw(disk_number):
     clean
     """
     run_diskpart_script(script)
+
 
 def create_volume(disk_number):
     script = f"""
@@ -92,392 +93,137 @@ def create_volume(disk_number):
     assign letter=Z
     """
     run_diskpart_script(script)
-    
+
+
 def minimize_window_by_exe(exe_name):
-    # List all windows
     windows = gw.getWindowsWithTitle('')
     for window in windows:
-        #print(window)
-        # Match the window title with the executable name
         if exe_name.lower() in window.title.lower():
-            # Connect to the application and minimize the window
             app = Application().connect(handle=window._hWnd)
             app.window(handle=window._hWnd).minimize()
             print(f"Window with title '{window.title}' minimized.")
             return
     print(f"No window found for executable: {exe_name}")
-    
+
+
 def labview():
-    global lw,back_process
+    global lw
     path = r'C:\Users\test\Desktop\DCPower-Max\Max Sampling Rate Measurement\builds\Untitled Project 1\My Application\Application.exe'
-    lw = subprocess.run([path],check=True)
-    
+    lw = subprocess.run([path], check=True)
+
+
 def copy_to_desktop():
     src_file = "sample.icf"
     dest_dir = input_params["def_desktop_loc"]
-    #print(src_file,dest_dir)
     shutil.copy2(src_file, dest_dir)
-    
+
+
 def drive_size_from_wmic():
-    time.sleep(2)
-    count10 = 0
     global total_drive_size
-    command = 'wmic diskdrive get model,size'
     command1 = 'wmic diskdrive get model'
-    result1 = os.popen(command1).read()
-    result = os.popen(command).readlines()
-    
-    for item1 in result:
-        if len(item1)>1:
-            if count10 == 0:
-                print('No.',item1)
-            else:
-                print(count10,item1)
-            count10 = count10 + 1
-    #print(result1)
     result1 = os.popen(command1).readlines()
-    target_drive_name = result1[int(input('select the SSD name: '))*2].split('\n')[0]
-    #print(target_drive_name)
+    target_drive_name = result1[int(input('select the SSD name: '))*2].strip()
+    command = 'wmic diskdrive get model,size'
+    result = os.popen(command).readlines()
     for item in result:
-        #print(item)
         if target_drive_name in item:
-            drive_size = int(item.split("  ")[1])
+            drive_size = int(item.split()[-1])
             total_drive_size = drive_size
             break
+
 
 def load_input_params():
     global input_params
     with open("config.txt") as file:
         for item in file:
-            if "first_capacity" in item:
-                pass
-                #capacity_1 = item.split(": ")
-                #format_1_capacity = re.findall(r'"([^"]*)"', capacity_1[1])[0]
-                #dbkscap = int(input('Enter the percentage to fill: '))
-                
-            elif "IO_meter_path" in item:
+            if "IO_meter_path" in item:
                 exepath = item.split(": ")
                 exec_path = re.findall(r'"([^"]*)"', exepath[1])[0]
                 input_params["IO_meter_path"] = exec_path
-            
             elif "target_drive_name" in item:
                 dri_name = item.split(": ")
                 target_dri_name = re.findall(r'"([^"]*)"', dri_name[1])[0]
                 input_params["target_drive_name"] = target_dri_name
-                
             elif "default_desktop_location" in item:
                 location = item.split(": ")
                 dest_loc = re.findall(r'"([^"]*)"', location[1])[0]
                 input_params["def_desktop_loc"] = dest_loc
-     
-mars = []
-def replace_size_in_icf(replace_text):
-    global mars
+
+
+def replace_size_in_icf(replace_text, index):
     mars.append(replace_text)
-    shutil.copyfile(r'default_entries.icf',r'sample.icf')
-    with open(r'sample.icf', 'r') as file: 
- 
-        data = file.read() 
+    shutil.copyfile(r'default_entries.icf', r'sample.icf')
+    with open(r'sample.icf', 'r') as file:
+        data = file.read()
         data = data.replace(def_string, replace_text)
         if index != 0:
-            #data = data.replace(def_string1, str(int(replace_text)+204800)) #100mb gap
-            data = data.replace(def_string1, str(int(mars[index-1])+1))
+            data = data.replace(def_string1, str(int(mars[index-1]) + 1))
         else:
             data = data.replace(def_string1, '0')
+    with open(r'sample.icf', 'w') as file:
+        file.write(data)
 
 
-    with open(r'sample.icf', 'w') as file: 
-      
-        file.write(data) 
-
-
-def update_icf_file(mac):
-     
+def update_icf_file(mac, index):
     capacity_to_write = int(((mac / 100) * total_drive_size) / 512)
-    print("Capacity_to_be_written is {0}".format(capacity_to_write))
-    replace_size_in_icf(str(capacity_to_write))
-    
+    print(f"Capacity to be written is {capacity_to_write}")
+    replace_size_in_icf(str(capacity_to_write), index)
+
+
 def get_path_parameters():
-    
     current_dir = os.getcwd()
     exec_path = input_params["IO_meter_path"]
-    icf_name = current_dir+ "\\sample.icf"
-    return (exec_path,icf_name)
+    icf_name = current_dir + "\\sample.icf"
+    return exec_path, icf_name
 
-def wait():
-    global count,back_process,macro
-    print("wait 300sec")
-    if index == len(iterr):
-        tcount = macro #300
-    else:
-        tcount = macro-10 #290
+
+def wait(index, iterr):
+    global count
+    tcount = macro if index == len(iterr) else macro - 10
     for index1 in range(tcount):
-        print('.',end = '')
+        print('.', end='')
         time.sleep(1)
         x.append(count)
         count += 1
         y.append(0)
-        plt.plot(x, y, color='blue')  # Update the plot
-        plt.pause(0.01)  # Pause for a short while to update the plot
-        if index1 == tcount-1:
+        plt.plot(x, y, color='blue')
+        plt.pause(0.01)
+        if index1 == tcount - 1:
             plt.savefig('perf.png')
-        #plt.close()
-    print(index,len(iterr)-1)
-    
-    if index == len(iterr)-1:
-        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=back_process.pid))
-        for proc in psutil.process_iter(['pid','name']):
+    print(index, len(iterr) - 1)
+    if index == len(iterr) - 1:
+        subprocess.Popen(f"TASKKILL /F /PID {back_process.pid} /T")
+        for proc in psutil.process_iter(['pid', 'name']):
             if proc.info['name'] == 'cmd.exe':
                 proc.kill()
                 print('cmd Process killed')
-            '''
-            if proc.info['name'] == 'Application.exe':
-                #print("=============AM I HERE+=================")
-                proc.kill()
-                print('labview Process killed')
-            '''
             if proc.info['name'] == 'typeperf.exe':
                 proc.kill()
                 print('typeperf Process killed')
-            
-        #subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=back_process.pid))
-        #subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=lw.pid))
-        #print("{0} sec sleep done".format((index + 1) * 60))
+
 
 def get_smart_temperatures():
     global temperature
     try:
-        # Run the smartctl command to get SMART data
         result = subprocess.run(['smartctl', '-a', '-d', 'sntasmedia', '/dev/sdb'], capture_output=True, text=True)
-        
-        # Check if the command was successful
         if result.returncode != 0:
             print(f"smartctl failed: {result.stderr}")
             return None, None, None
-        
-        # Extract the temperature data using regex
         temp_match = re.search(r'Temperature.*?:\s+(\d+)', result.stdout)
         temp1_match = re.search(r'Temperature\sSensor\s1.*?:\s+(\d+)', result.stdout)
         temp2_match = re.search(r'Temperature\sSensor\s2.*?:\s+(\d+)', result.stdout)
-        
         temperature = int(temp_match.group(1)) if temp_match else None
         temp_sensor_1 = int(temp1_match.group(1)) if temp1_match else None
         temp_sensor_2 = int(temp2_match.group(1)) if temp2_match else None
-        
         return temperature, temp_sensor_1, temp_sensor_2
     except Exception as e:
         print(f"An error occurred: {e}")
         return None, None, None
+
 
 def monitor_temperature(interval=1):
     global temperature
     wb = Workbook()
     ws = wb.active
     ws.title = "Temperature Log"
-    
-    # Write the headers
-    ws.append(["Timestamp", "Temperature (°C)", "Temperature Sensor 1 (°C)", "Temperature Sensor 2 (°C)"])
-    
-    while True:
-        temperature, temp_sensor_1, temp_sensor_2 = get_smart_temperatures()
-        if temperature is not None or temp_sensor_1 is not None or temp_sensor_2 is not None:
-            # Get the current timestamp
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Append the timestamp and temperatures to the worksheet
-            ws.append([timestamp, temperature, temp_sensor_1, temp_sensor_2])
-            #print(f"{timestamp} - Temperature: {temperature}°C, Sensor 1: {temp_sensor_1}°C, Sensor 2: {temp_sensor_2}°C")
-            
-            # Save the workbook every time a new value is added
-            wb.save("temperature_log.xlsx")
-            
-        time.sleep(interval)
-
-def tank():
-    global liquid_tank
-    max_capacity = max_cap/1024/1024  # Change this to your desired max capacity
-    liquid_tank = LiquidTank(max_capacity)    
-    liquid_tank.start()
-
-thread = threading.Thread(target = tank)
-thread.start()
-
-def simulate_data_update():
-    liquid_tank.update_data(round(cap/1024/1024,2))
-    liquid_tank.window.after(1000, simulate_data_update)
-    
-load_input_params()
-app_path, file_path = get_path_parameters()
-log = open('perf_result.csv','w')  # so that data written to it will be appended
-back_process = subprocess.Popen(['cmd', '/C', 'typeperf', 'PhysicalDisk(1)\\Disk Bytes/sec'], stdout=log, stderr=log, shell=True)
-print("back porcess Id ",back_process.pid)
-thread10 = threading.Thread(target=labview)
-thread10.start()
-thread11 = threading.Thread(target=monitor_temperature)
-thread11.start()
-time.sleep(5)
-minimize_window_by_exe('Application')
-time.sleep(3)
-disk_number = 1  # Replace with your actual disk number
-
-if check_if_raw(disk_number):
-    create_volume(disk_number)
-
-clean_and_make_raw(disk_number)
-print(f"Disk {disk_number} has been cleaned and made raw again.")
-
-drive_size_from_wmic()
-
-plt.ion()  # Turn on interactive mode
-fig = plt.figure()
-
-global x,y,count
-x = []
-y = []
-y1 = []
-iterr = [] 
-count = 0
-for dbksss in  range(int(input('Enter the number of iterations to be performed: '))):
-    iterr.append(float(input('Enter the percentage to fill: ')))
-    
-for index in range(len(iterr)):
-    
-    update_icf_file(iterr[index])
-    copy_to_desktop()
-    
-    icf_name = file_path.split('\\')[-1]
-    app = Application(backend="uia").start(app_path)
-    time.sleep(5)
-    main_window = app.window(title="Iometer")
-    pyautogui.hotkey('ctrl','o')
-    time.sleep(1)
-    pyautogui.write(icf_name)
-    pyautogui.press('enter')
-    time.sleep(4)
-    screenshot = np.array(ImageGrab.grab())
-    gray_screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
-    lower_green = np.array([0, 255, 0])
-    upper_green = np.array([0, 255, 0])
-    mask = cv2.inRange(screenshot, lower_green, upper_green)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        M = cv2.moments(contour)
-        if M["m00"] != 0:
-            xx = int(M["m10"] / M["m00"])
-            yy = int(M["m01"] / M["m00"])
-            flag_location = (xx, yy)              
-            pyautogui.click(flag_location)
-    time.sleep(3)
-    pyautogui.write('auto_results')
-    pyautogui.press('enter')
-    
-    global max_cap
-    max_cap = 0
-    
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        for i, line in enumerate(lines):
-            if 'Disk maximum size' in line:
-                line_number = i
-                break
-        if line_number != 0:
-            max_cap = int(lines[line_number + 1].strip().split(',')[0])*512
-        else:
-            print("Phrase 'Disk maximum size' not found or no line follows it.")
-        
-    #print("Background process id is {0}".format(back_process.pid))
-    process = subprocess.Popen(['cmd', '/C', 'typeperf', 'PhysicalDisk(1)\\Disk Bytes/sec'], stdout=subprocess.PIPE)
-    print('Filled','  MAX')
-    plt.show()  # Show the plot
-    global cap
-    cap = 0
-    for i in process.stdout:
-        dbks = i.decode()
-        if len(dbks) > 3:
-            dbksb = dbks.split('"')[3]
-            try:
-                cap += float(dbksb)
-                simulate_data_update()
-                print(round(cap/1024/1024,2),round(max_cap/1024/1024,2))
-                dbksmb = round(float(dbksb) / (1024 * 1024), 2)
-                #print(type(x))
-                x.append(count)
-                count += 1
-                y.append(dbksmb)
-                y1.append(temperature)
-                plt.plot(x, y, color='blue')  # Update the plot
-                plt.plot(x, y1, color='red')
-                plt.pause(0.01)  # Pause for a short while to update the plot
-                #plt.close()
-                if count%100==0:
-                    print('Perf @',count,'is',dbksmb,'MBPS')
-                if cap > max_cap:                   
-                    for proc in psutil.process_iter(['pid','name']):
-                        if proc.info['name'] == 'IOmeter.exe':
-                            proc.kill()
-                            print('Process completed')
-     
-                    break
-            except ValueError:
-                continue
-    wait()
-#global back_process
-#print("back_process.pid is {0}".format(back_process.pid))
-
-for proc in psutil.process_iter(['pid','name']):
-    if proc.info['name'] == 'python.exe':
-        proc.kill()
-        print('Process completed')
-
-
-
-
-
-
-
-
-
-
-
-
-
-Exception in thread Thread-7 (tank):
-Traceback (most recent call last):
-  File "C:\Users\test\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1073, in _bootstrap_inner
-    self.run()
-  File "C:\Users\test\AppData\Local\Programs\Python\Python312\Lib\site-packages\ipykernel\ipkernel.py", line 766, in run_closure
-    _threading_Thread_run(self)
-  File "C:\Users\test\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1010, in run
-    self._target(*self._args, **self._kwargs)
-  File "c:\users\test\desktop\sunil\io_meter_automation4.py", line 298, in tank
-    max_capacity = max_cap/1024/1024  # Change this to your desired max capacity
-                   ^^^^^^^
-NameError: name 'max_cap' is not defined
-back porcess Id  12900
-Window with title 'Application' minimized.
-Disk 1 has been cleaned and made raw again.
-No. Model                                    Size           
-
-1 Samsung PSSD T7 Shield SCSI Disk Device  4000784417280  
-
-2 SAMSUNG MZVLQ512HBLU-00B                 512105932800   
-
-select the SSD name: 1
-Enter the number of iterations to be performed: 1
-Enter the percentage to fill: 1
-Capacity_to_be_written is 78140320
-Filled   MAX
-<Figure size 432x288 with 0 Axes>
-Traceback (most recent call last):
-
-  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\spyder_kernels\py3compat.py:356 in compat_exec
-    exec(code, globals, locals)
-
-  File c:\users\test\desktop\sunil\io_meter_automation4.py:401
-    simulate_data_update()
-
-  File c:\users\test\desktop\sunil\io_meter_automation4.py:306 in simulate_data_update
-    liquid_tank.update_data(round(cap/1024/1024,2))
-
-NameError: name 'liquid_tank' is not defined
+    ws.append(["Timestamp", "Temperature (°C)", "Temperature Sensor 1 (°C)", "Temperature Sensor 2 (

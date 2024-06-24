@@ -24,8 +24,7 @@ class LiquidTank:
 
     def add_liquid_segment(self, dbksmb):
         global threshold, threshold1
-        filling_ratio = self.current_data / self.max_capacity
-        total_filling_width = filling_ratio * self.tank_width
+        segment_width = 10  # Define a constant segment width
 
         # Determine the color based on the current dbksmb value
         if (dbksmb < threshold + 10) and (dbksmb > threshold - 10):
@@ -41,21 +40,17 @@ class LiquidTank:
         else:
             last_filling_width = 50
 
-        # Ensure the new segment does not exceed the tank width
-        new_filling_width = min(total_filling_width, self.tank_width)
-        
         new_segment = {
             'color': color,
             'start': last_filling_width,
-            'end': last_filling_width + (new_filling_width - last_filling_width)
+            'end': min(last_filling_width + segment_width, 50 + self.tank_width)  # Ensure it doesn't exceed tank width
         }
         self.liquid_segments.append(new_segment)
         self.draw_liquid()
 
     def draw_liquid(self):
-        self.canvas.delete("liquid")  # Clear previous liquid segments
         for segment in self.liquid_segments:
-            self.canvas.create_rectangle((segment['start'], 10), (segment['end'], 50), fill=segment['color'], outline="", tags="liquid")
+            self.canvas.create_rectangle((segment['start'], 10), (segment['end'], 50), fill=segment['color'], outline="")
 
     def start(self):
         self.window.mainloop()

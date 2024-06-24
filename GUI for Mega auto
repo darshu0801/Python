@@ -10,7 +10,7 @@ class LiquidTank:
         # Define the tank dimensions
         self.tank_width = 500
         self.tank_outline = self.canvas.create_rectangle((50, 10), (550, 50), outline='black', width=3)
-        self.liquid_level = self.canvas.create_rectangle((50, 10), (50, 50), fill='blue')
+        self.liquid_segments = []
 
         self.max_label = tk.Label(self.window, text=f"Max Capacity(MB): {self.max_capacity}")
         self.max_label.pack()
@@ -19,15 +19,15 @@ class LiquidTank:
 
     def update_data(self, current_data, dbksmb):
         self.current_data = current_data
-        self.update_liquid_level(dbksmb)
+        self.add_liquid_segment(dbksmb)
         self.current_label.config(text=f"Current Data(MB): {self.current_data}")
 
-    def update_liquid_level(self, dbksmb):
+    def add_liquid_segment(self, dbksmb):
         global threshold, threshold1
         filling_ratio = self.current_data / self.max_capacity
-        filling_width = filling_ratio * self.tank_width
+        new_filling_width = filling_ratio * self.tank_width
 
-        # Update the color based on the filling ratio and threshold values
+        # Determine the color based on the current dbksmb value
         if (dbksmb < threshold + 10) and (dbksmb > threshold - 10):
             color = 'red'
         elif dbksmb == 0:
@@ -35,8 +35,25 @@ class LiquidTank:
         else:
             color = 'blue'
 
-        self.canvas.itemconfig(self.liquid_level, fill=color)
-        self.canvas.coords(self.liquid_level, 50, 10, 50 + filling_width, 50)
+        if self.liquid_segments:
+            last_segment = self.liquid_segments[-1]
+            last_filling_width = last_segment['width']
+        else:
+            last_filling_width = 0
+
+        new_segment = {
+            'color': color,
+            'width': new_filling_width - last_filling_width
+        }
+        self.liquid_segments.append(new_segment)
+        self.draw_liquid()
+
+    def draw_liquid(self):
+        x_start = 50
+        for segment in self.liquid_segments:
+            x_end = x_start + segment['width']
+            self.canvas.create_rectangle((x_start, 10), (x_end, 50), fill=segment['color'], outline="")
+            x_start = x_end
 
     def start(self):
         self.window.mainloop()

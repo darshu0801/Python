@@ -1,0 +1,34 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import time
+
+# Define the path to your Excel file
+excel_file_path = 'path/to/your/excel_file.xlsx'
+
+# Specify the column name you want to plot
+column_name = 'YourColumnName'
+
+# Initialize the plot
+plt.ion()  # Turn on interactive mode
+figure, ax = plt.subplots()
+line, = ax.plot([], [])
+
+while True:
+    # Read the Excel file
+    data = pd.read_excel(excel_file_path)
+
+    # Get the specific column data
+    column_data = data[column_name]
+
+    # Update the plot
+    line.set_xdata(range(len(column_data)))
+    line.set_ydata(column_data)
+    ax.relim()
+    ax.autoscale_view()
+
+    # Draw the plot
+    figure.canvas.draw()
+    figure.canvas.flush_events()
+
+    # Wait for 3 seconds before the next update
+    time.sleep(3)

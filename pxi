@@ -98,3 +98,48 @@ if __name__ == '__main__':
     print(end - start)
     plt.ion()
     plt.show()  # Show the plot after all iterations
+
+
+
+
+import openpyxl
+import matplotlib.pyplot as plt
+import time
+
+# Define the path to your Excel file
+excel_file_path = 'path/to/your/excel_file.xlsx'
+
+# Specify the column letter you want to plot (e.g., 'A' for the first column)
+column_letter = 'A'
+
+# Initialize the plot
+plt.ion()  # Turn on interactive mode
+figure, ax = plt.subplots()
+line, = ax.plot([], [])
+
+while True:
+    # Load the workbook and select the active sheet
+    workbook = openpyxl.load_workbook(excel_file_path)
+    sheet = workbook.active
+
+    # Read the data from the specified column
+    column_data = []
+    for cell in sheet[column_letter]:
+        column_data.append(cell.value)
+
+    # Remove the header if present
+    if isinstance(column_data[0], str):
+        column_data = column_data[1:]
+
+    # Update the plot
+    line.set_xdata(range(len(column_data)))
+    line.set_ydata(column_data)
+    ax.relim()
+    ax.autoscale_view()
+
+    # Draw the plot
+    figure.canvas.draw()
+    figure.canvas.flush_events()
+
+    # Wait for 3 seconds before the next update
+    time.sleep(3)

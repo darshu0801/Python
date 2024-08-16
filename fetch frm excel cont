@@ -221,23 +221,13 @@ import threading
 import re
 import subprocess
 from openpyxl import Workbook
-import shutil
 from queue import Queue
 
 # Define the path to your Excel file
 excel_file_path = r'C:\Users\test\Desktop\python files\temperature_log.xlsx'
-copied_excel_file_path = r'C:\Users\test\Desktop\python files\temperature_log_1.xlsx'
 
 # Specify the column letter you want to plot (e.g., 'A' for the first column)
 column_letter = 'B'
-
-# Initialize the plot
-plt.ion()  # Turn on interactive mode
-figure, ax = plt.subplots()
-line, = ax.plot([], [], color='blue')  # Initialize an empty line plot
-plt.title('Temperature Over Time')
-plt.xlabel('Time')
-plt.ylabel('Temperature (°C)')
 
 # Queue to handle thread-safe operations
 data_queue = Queue()
@@ -283,16 +273,30 @@ def monitor_temperature(interval=1):
             # Append the timestamp and temperatures to the worksheet
             ws.append([timestamp, temperature, temp_sensor_1, temp_sensor_2])
             # Save the workbook every time a new value is added
-            wb.save("temperature_log.xlsx")
+            wb.save(excel_file_path)
             
             # Enqueue the new data for plotting
             data_queue.put((timestamp, temperature, temp_sensor_1, temp_sensor_2))
             
         time.sleep(interval)
 
-def plot():
+def main():
+    # Start the temperature monitoring thread
+    thread = threading.Thread(target=monitor_temperature)
+    thread.daemon = True
+    thread.start()
+
+    # Initialize plot
+    plt.ion()
+    figure, ax = plt.subplots()
+    ax.set_title('Temperature Over Time')
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Temperature (°C)')
+    line, = ax.plot([], [], color='blue')  # Initialize an empty line plot
+
     xlist = []
     column_data = []
+
     while True:
         if not data_queue.empty():
             _, temperature, _, _ = data_queue.get()
@@ -305,13 +309,8 @@ def plot():
             ax.relim()  # Recompute the data limits
             ax.autoscale_view()  # Rescale the view based on the new data
 
-            plt.draw()
-            plt.pause(0.1)  # Short pause to update the plot
+        plt.draw()
+        plt.pause(1)  # Short pause to update the plot
 
-        time.sleep(1)
-
-thread10 = threading.Thread(target=monitor_temperature)
-thread10.start()
-
-thread11 = threading.Thread(target=plot)
-thread11.start()
+if __name__ == "__main__":
+    main()

@@ -1,34 +1,105 @@
-import pandas as pd
+import openpyxl
 import matplotlib.pyplot as plt
 import time
+import threading
+import re
+import subprocess
+from openpyxl import Workbook
+import shutil
 
 # Define the path to your Excel file
-excel_file_path = 'path/to/your/excel_file.xlsx'
+excel_file_path = r'C:\Users\test\Desktop\python files\temperature_log.xlsx'
+copied_excel_file_path = r'C:\Users\test\Desktop\python files\temperature_log_1.xlsx'
 
-# Specify the column name you want to plot
-column_name = 'YourColumnName'
-
+# Specify the column letter you want to plot (e.g., 'A' for the first column)
+column_letter = 'B'
+count=1
 # Initialize the plot
 plt.ion()  # Turn on interactive mode
 figure, ax = plt.subplots()
 line, = ax.plot([], [])
 
-while True:
-    # Read the Excel file
-    data = pd.read_excel(excel_file_path)
+def get_smart_temperatures():
+    global temperature
+    try:
+        # Run the smartctl command to get SMART data
+        result = subprocess.run(['smartctl', '-a', '-d', 'sntasmedia', '/dev/sdb'], capture_output=True, text=True)
+        
+        # Check if the command was successful
+        if result.returncode != 0:
+            print(f"smartctl failed: {result.stderr}")
+            return None, None, None
+        
+        # Extract the temperature data using regex
+        temp_match = re.search(r'Temperature.*?:\s+(\d+)', result.stdout)
+        temp1_match = re.search(r'Temperature\sSensor\s1.*?:\s+(\d+)', result.stdout)
+        temp2_match = re.search(r'Temperature\sSensor\s2.*?:\s+(\d+)', result.stdout)
+        
+        temperature = int(temp_match.group(1)) if temp_match else None
+        temp_sensor_1 = int(temp1_match.group(1)) if temp1_match else None
+        temp_sensor_2 = int(temp2_match.group(1)) if temp2_match else None
+        
+        return temperature, temp_sensor_1, temp_sensor_2
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None, None, None
 
-    # Get the specific column data
-    column_data = data[column_name]
+def monitor_temperature(interval=1):
+    global temperature
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Temperature Log"
+    
+    # Write the headers
+    ws.append(["Timestamp", "Temperature (°C)", "Temperature Sensor 1 (°C)", "Temperature Sensor 2 (°C)"])
+    
+    while True:
+        temperature, temp_sensor_1, temp_sensor_2 = get_smart_temperatures()
+        if temperature is not None or temp_sensor_1 is not None or temp_sensor_2 is not None:
+            # Get the current timestamp
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Append the timestamp and temperatures to the worksheet
+            ws.append([timestamp, temperature, temp_sensor_1, temp_sensor_2])
+            #print(f"{timestamp} - Temperature: {temperature}°C, Sensor 1: {temp_sensor_1}°C, Sensor 2: {temp_sensor_2}°C")
+            
+            # Save the workbook every time a new value is added
+            wb.save("temperature_log.xlsx")
+            
+        time.sleep(interval)
+
+
+def plot():
+    plt.plot(xlist, column_data, color='blue')  # Update the plot
+    time.sleep(3)
+    
+thread10 = threading.Thread(target=monitor_temperature)
+thread10.start()
+
+
+
+while True:
+    
+    shutil.copyfile(excel_file_path, copied_excel_file_path)
+    # Load the workbook and select the active sheet
+    workbook = openpyxl.load_workbook(copied_excel_file_path)
+    sheet = workbook.active
+
+    # Read the data from the specified column
+    column_data = []
+    for cell in sheet[column_letter]:
+        column_data.append(cell.value)
+
+    # Remove the header if present
+    if isinstance(column_data[0], str):
+        column_data = column_data[1:]
 
     # Update the plot
-    line.set_xdata(range(len(column_data)))
-    line.set_ydata(column_data)
-    ax.relim()
-    ax.autoscale_view()
-
-    # Draw the plot
-    figure.canvas.draw()
-    figure.canvas.flush_events()
-
+    xlist = list(range(1,len(column_data)+1))
+    if count == 1:
+        thread11 = threading.Thread(target=plot)
+        thread11.start()
+    
+    count+=1
     # Wait for 3 seconds before the next update
-    time.sleep(3)
+    time.sleep(1)

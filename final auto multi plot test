@@ -439,3 +439,68 @@ for proc in psutil.process_iter(['pid','name']):
     if proc.info['name'] == 'python.exe':
         proc.kill()
         print('Process completed')
+
+
+
+
+
+
+
+
+
+plt.ion()  # Turn on interactive mode
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8))
+
+ax1.set_title("Time vs Perf")
+ax1.set_xlabel("Time")
+ax1.set_ylabel("Performance (MB/s)")
+
+ax2.set_title("Cap vs Perf")
+ax2.set_xlabel("Capacity Filled (MB)")
+ax2.set_ylabel("Performance (MB/s)")
+
+ax3.set_title("Time vs Temp")
+ax3.set_xlabel("Time")
+ax3.set_ylabel("Temperature (°C)")
+
+x = []
+y = []
+y1 = []
+cap = 0
+
+process = subprocess.Popen(['cmd', '/C', 'typeperf', 'PhysicalDisk(1)\\Disk Bytes/sec'], stdout=subprocess.PIPE)
+for i in process.stdout:
+    dbks = i.decode()
+    if len(dbks) > 3:
+        dbksb = dbks.split('"')[3]
+        try:
+            if count == 2:
+                threshold = float(dbksb) / 1024 / 1024
+            threshold1 = float(dbksb)
+            cap += float(dbksb)
+
+            # Update plots
+            dbksmb = round(float(dbksb) / (1024 * 1024), 2)
+            x.append(count)
+            y.append(dbksmb)
+            y1.append(temperature)
+
+            ax1.plot(x, y, color='blue')  # Time vs Perf
+            ax2.plot(round(cap / 1024 / 1024, 2), dbksmb, 'ro')  # Cap vs Perf
+            ax3.plot(x, y1, color='green')  # Time vs Temp
+
+            plt.pause(0.01)  # Pause for a short while to update the plot
+
+            if count % 100 == 0:
+                print('Perf @', count, 'is', dbksmb, 'MBPS')
+            if cap > max_cap:
+                for proc in psutil.process_iter(['pid', 'name']):
+                    if proc.info['name'] == 'IOmeter.exe':
+                        proc.kill()
+                        print('Process completed')
+                break
+            count += 1
+        except ValueError:
+            continue
+
+plt.show()

@@ -83,3 +83,102 @@ if __name__ == "__main__":
     thread.start()
 
     app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+
+
+
+
+
+
+
+
+
+
+
+import matplotlib
+matplotlib.use('Agg')  # Use the Agg backend to avoid GUI issues
+import matplotlib.pyplot as plt
+from flask import Flask, render_template_string, send_file
+import io
+import time
+from threading import Lock, Thread
+
+app = Flask(__name__)
+
+# Initialize x and y for three different plots
+x1, y1 = [], []
+x2, y2 = [], []
+x3, y3 = [], []
+
+plot_lock = Lock()  # Create a lock to handle concurrency issues
+
+# HTML template for multiple plots with cache-busting query parameter
+html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Plots</title>
+    <meta http-equiv="refresh" content="2"> <!-- Refresh every 2 seconds -->
+</head>
+<body>
+    <h1>Real-time Plots</h1>
+    <div>
+        <img src="/plot1.png?rand={{ time }}" alt="Plot 1">
+        <img src="/plot2.png?rand={{ time }}" alt="Plot 2">
+        <img src="/plot3.png?rand={{ time }}" alt="Plot 3">
+    </div>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    # Pass current time to the template to ensure unique image URLs
+    return render_template_string(html_template, time=time.time())
+
+@app.route('/plot1.png')
+def plot1_png():
+    return generate_plot(x1, y1)
+
+@app.route('/plot2.png')
+def plot2_png():
+    return generate_plot(x2, y2)
+
+@app.route('/plot3.png')
+def plot3_png():
+    return generate_plot(x3, y3)
+
+def generate_plot(x, y):
+    with plot_lock:  # Ensure only one thread can generate a plot at a time
+        fig, ax = plt.subplots()
+        ax.plot(x, y)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+
+        output = io.BytesIO()
+        plt.savefig(output, format='png')
+        plt.close(fig)
+        output.seek(0)
+        return send_file(output, mimetype='image/png')
+
+def update_data():
+    global x1, y1, x2, y2, x3, y3
+    # Example data update
+    x1.append(len(x1))
+    y1.append(len(y1) ** 2)
+
+    x2.append(len(x2))
+    y2.append(len(y2) ** 1.5)
+
+    x3.append(len(x3))
+    y3.append(len(y3) ** 1.2)
+
+if __name__ == "__main__":
+    def data_thread():
+        while True:
+            update_data()
+            time.sleep(1)
+
+    thread = Thread(target=data_thread)
+    thread.start()
+
+    app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)  # Run the Flask app with debug mode off

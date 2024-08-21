@@ -4,21 +4,26 @@ import io
 
 app = Flask(__name__)
 
-# Initialize x and y
-x = []
-y = []
+# Initialize x and y for three different plots
+x1, y1 = [], []
+x2, y2 = [], []
+x3, y3 = [], []
 
-# HTML template
+# HTML template for multiple plots
 html_template = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Real-time Plot</title>
-    <meta http-equiv="refresh" content="1">
+    <title>Real-time Plots</title>
+    <meta http-equiv="refresh" content="2"> <!-- Refresh every 2 seconds -->
 </head>
 <body>
-    <h1>Real-time Plot</h1>
-    <img src="/plot.png" alt="Plot">
+    <h1>Real-time Plots</h1>
+    <div>
+        <img src="/plot1.png" alt="Plot 1">
+        <img src="/plot2.png" alt="Plot 2">
+        <img src="/plot3.png" alt="Plot 3">
+    </div>
 </body>
 </html>
 """
@@ -27,8 +32,19 @@ html_template = """
 def index():
     return render_template_string(html_template)
 
-@app.route('/plot.png')
-def plot_png():
+@app.route('/plot1.png')
+def plot1_png():
+    return generate_plot(x1, y1)
+
+@app.route('/plot2.png')
+def plot2_png():
+    return generate_plot(x2, y2)
+
+@app.route('/plot3.png')
+def plot3_png():
+    return generate_plot(x3, y3)
+
+def generate_plot(x, y):
     fig, ax = plt.subplots()
     ax.plot(x, y)
     ax.set_xlabel('X')
@@ -41,13 +57,18 @@ def plot_png():
     return send_file(output, mimetype='image/png')
 
 def update_data():
-    global x, y
-    # Example of updating the data
-    x.append(len(x))
-    y.append(len(y) ** 2)
+    global x1, y1, x2, y2, x3, y3
+    # Example data update
+    x1.append(len(x1))
+    y1.append(len(y1) ** 2)
+
+    x2.append(len(x2))
+    y2.append(len(y2) ** 1.5)
+
+    x3.append(len(x3))
+    y3.append(len(y3) ** 1.2)
 
 if __name__ == "__main__":
-    # For demonstration, we update the data every second
     import threading
     import time
     
@@ -59,52 +80,4 @@ if __name__ == "__main__":
     thread = threading.Thread(target=data_thread)
     thread.start()
 
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-runfile('C:/Users/test/Desktop/sunil/untitled3.py', wdir='C:/Users/test/Desktop/sunil')
- * Serving Flask app 'untitled3'
- * Debug mode: on
-WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.217.66:5000
-Press CTRL+C to quit
- * Restarting with stat
-An exception has occurred, use %tb to see the full traceback.
-
-SystemExit: 1
-
-
-%tb
-Traceback (most recent call last):
-
-  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\spyder_kernels\py3compat.py:356 in compat_exec
-    exec(code, globals, locals)
-
-  File c:\users\test\desktop\sunil\untitled3.py:62
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
-  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py:625 in run
-    run_simple(t.cast(str, host), port, self, **options)
-
-  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\werkzeug\serving.py:1106 in run_simple
-    run_with_reloader(
-
-  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\werkzeug\_reloader.py:458 in run_with_reloader
-    sys.exit(reloader.restart_with_reloader())
-
-SystemExit: 1
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)

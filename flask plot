@@ -60,3 +60,51 @@ if __name__ == "__main__":
     thread.start()
 
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+runfile('C:/Users/test/Desktop/sunil/untitled3.py', wdir='C:/Users/test/Desktop/sunil')
+ * Serving Flask app 'untitled3'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.217.66:5000
+Press CTRL+C to quit
+ * Restarting with stat
+An exception has occurred, use %tb to see the full traceback.
+
+SystemExit: 1
+
+
+%tb
+Traceback (most recent call last):
+
+  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\spyder_kernels\py3compat.py:356 in compat_exec
+    exec(code, globals, locals)
+
+  File c:\users\test\desktop\sunil\untitled3.py:62
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py:625 in run
+    run_simple(t.cast(str, host), port, self, **options)
+
+  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\werkzeug\serving.py:1106 in run_simple
+    run_with_reloader(
+
+  File ~\AppData\Local\Programs\Python\Python312\Lib\site-packages\werkzeug\_reloader.py:458 in run_with_reloader
+    sys.exit(reloader.restart_with_reloader())
+
+SystemExit: 1

@@ -57,3 +57,66 @@ for i in process.stdout:
 
 plt.ioff()
 plt.show()
+
+
+
+
+
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import pandas as pd
+
+# Initialize plotly figure with subplots
+fig = make_subplots(rows=3, cols=1, subplot_titles=("Time vs Perf", "Cap vs Perf", "Time vs Temp"))
+
+# Initialize data lists
+x = []
+y = []
+y1 = []
+cap = 0
+
+def update_plot(x, y, y1, cap, dbksmb, count, temperature):
+    # Update first subplot (Time vs Perf)
+    fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name='Time vs Perf'), row=1, col=1)
+
+    # Update second subplot (Cap vs Perf)
+    fig.add_trace(go.Scatter(x=[round(cap / 1024 / 1024, 2)], y=[dbksmb], mode='lines+markers', name='Cap vs Perf'), row=2, col=1)
+
+    # Update third subplot (Time vs Temp)
+    fig.add_trace(go.Scatter(x=x, y=y1, mode='lines', name='Time vs Temp'), row=3, col=1)
+
+    # Refresh plot
+    fig.show()
+
+# Initialize process to capture data
+process = subprocess.Popen(['cmd', '/C', 'typeperf', 'PhysicalDisk(1)\\Disk Bytes/sec'], stdout=subprocess.PIPE)
+for i in process.stdout:
+    dbks = i.decode()
+    if len(dbks) > 3:
+        dbksb = dbks.split('"')[3]
+        try:
+            if count == 2:
+                threshold = float(dbksb) / 1024 / 1024
+            threshold1 = float(dbksb)
+            cap += float(dbksb)
+
+            # Calculate values for plotting
+            dbksmb = round(float(dbksb) / (1024 * 1024), 2)
+            x.append(count)
+            y.append(dbksmb)
+            y1.append(temperature)
+
+            # Update plot with new data
+            update_plot(x, y, y1, cap, dbksmb, count, temperature)
+
+            if count % 100 == 0:
+                print('Perf @', count, 'is', dbksmb, 'MBPS')
+            if cap > max_cap:
+                for proc in psutil.process_iter(['pid', 'name']):
+                    if proc.info['name'] == 'IOmeter.exe':
+                        proc.kill()
+                        print('Process completed')
+                break
+            count += 1
+        except ValueError:
+            continue

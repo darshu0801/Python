@@ -1,0 +1,62 @@
+from flask import Flask, render_template_string, send_file
+import matplotlib.pyplot as plt
+import io
+
+app = Flask(__name__)
+
+# Initialize x and y
+x = []
+y = []
+
+# HTML template
+html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Plot</title>
+    <meta http-equiv="refresh" content="1">
+</head>
+<body>
+    <h1>Real-time Plot</h1>
+    <img src="/plot.png" alt="Plot">
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(html_template)
+
+@app.route('/plot.png')
+def plot_png():
+    fig, ax = plt.subplots()
+    ax.plot(x, y)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+
+    output = io.BytesIO()
+    plt.savefig(output, format='png')
+    plt.close(fig)
+    output.seek(0)
+    return send_file(output, mimetype='image/png')
+
+def update_data():
+    global x, y
+    # Example of updating the data
+    x.append(len(x))
+    y.append(len(y) ** 2)
+
+if __name__ == "__main__":
+    # For demonstration, we update the data every second
+    import threading
+    import time
+    
+    def data_thread():
+        while True:
+            update_data()
+            time.sleep(1)
+
+    thread = threading.Thread(target=data_thread)
+    thread.start()
+
+    app.run(debug=True, host='0.0.0.0', port=5000)

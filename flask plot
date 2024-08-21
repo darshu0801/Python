@@ -81,3 +81,26 @@ if __name__ == "__main__":
     thread.start()
 
     app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+
+
+
+
+
+
+
+
+
+
+
+
+127.0.0.1 - - [21/Aug/2024 15:27:10] "GET / HTTP/1.1" 200 -
+C:\Users\test\Desktop\sunil\flask plot test.py:48: UserWarning: Starting a Matplotlib GUI outside of the main thread will likely fail.
+  fig, ax = plt.subplots()
+WARNING: QApplication was not created in the main() thread.
+WARNING: QApplication was not created in the main() thread.
+QApplication::regClass: Registering window class 'Qt5152PowerDummyWindow' failed. (Class already exists.)
+QApplication::regClass: Registering window class 'Qt5152PowerDummyWindow' failed. (Class already exists.)
+QApplication::regClass: Registering window class 'Qt5152ClipboardView' failed. (Class already exists.)
+127.0.0.1 - - [21/Aug/2024 15:27:10] "GET /plot3.png HTTP/1.1" 200 -
+
+C:\Users\test\Desktop\sunil>

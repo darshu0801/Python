@@ -1,0 +1,35 @@
+# Function to replace occurrences in the .ICF file and save the result
+def replace_and_save_icf(file_path, output_folder, replace_dict):
+    # Read the contents of the .ICF file
+    with open(file_path, 'r') as file:
+        file_content = file.read()
+
+    # Replace all occurrences of the keys with their respective values
+    for key, value in replace_dict.items():
+        file_content = file_content.replace(key, value)
+
+    # Create the path for the output file
+    output_file_path = f"{output_folder}/1.icf"
+
+    # Save the modified content to the new file
+    with open(output_file_path, 'w') as output_file:
+        output_file.write(file_content)
+
+    print(f"File saved successfully as {output_file_path}")
+
+# Example usage
+# Dictionary where keys are the words to be replaced and values are the replacements
+replace_dict = {
+    "key1": "value1",
+    "key2": "value2",
+    # Add more key-value pairs as needed
+}
+
+# Path to the original .ICF file
+file_path = 'path/to/your/file.icf'
+
+# Folder where the new file should be saved
+output_folder = 'path/to/output/folder'
+
+# Call the function to perform replacements and save the result
+replace_and_save_icf(file_path, output_folder, replace_dict)

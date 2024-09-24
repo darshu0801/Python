@@ -1,0 +1,22 @@
+import subprocess
+import os
+
+def open_cmd_and_run_commands(directory, commands):
+    # Check if the directory exists
+    if os.path.isdir(directory):
+        # Prepare the command string to change to the directory and execute commands one by one
+        cmd_string = f'cd /d "{directory}" && ' + " && ".join(commands)
+        # Open Command Prompt, run commands, and keep it open
+        subprocess.run(f'start cmd /K "{cmd_string}"', shell=True)
+    else:
+        print(f"The directory {directory} does not exist.")
+
+# Example usage
+directory_path = r"C:\Users\YourUsername\Documents"  # Change to your desired path
+commands = [
+    "echo Hello World",  # Example command
+    "dir",               # List directory contents
+    "ipconfig"           # Example network configuration command
+]
+
+open_cmd_and_run_commands(directory_path, commands)

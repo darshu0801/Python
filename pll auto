@@ -1,22 +1,18 @@
-import subprocess
-import os
+import itertools
 
-def open_cmd_and_run_commands(directory, commands):
-    # Check if the directory exists
-    if os.path.isdir(directory):
-        # Prepare the command string to change to the directory and execute commands one by one
-        cmd_string = f'cd /d "{directory}" && ' + " && ".join(commands)
-        # Open Command Prompt, run commands, and keep it open
-        subprocess.run(f'start cmd /K "{cmd_string}"', shell=True)
-    else:
-        print(f"The directory {directory} does not exist.")
+# Define your lists
+a = ['0003', '0004']
+b = ['01', '02', '03', '04', '05', '06']
 
-# Example usage
-directory_path = r"C:\Users\YourUsername\Documents"  # Change to your desired path
-commands = [
-    "echo Hello World",  # Example command
-    "dir",               # List directory contents
-    "ipconfig"           # Example network configuration command
-]
+# Create all combinations of length 6 with elements from a
+combinations = list(itertools.product(a, repeat=len(b)))
 
-open_cmd_and_run_commands(directory_path, commands)
+# Combine each element of b with each combination from a
+result = [''.join([a_elem + b_elem for a_elem, b_elem in zip(combo, b)]) for combo in combinations]
+
+# Output the result
+for res in result:
+    print(res)
+
+# To count the total number of combinations
+print(f"Total combinations: {len(result)}")

@@ -1,5 +1,4 @@
 import tkinter as tk
-from functools import partial
 
 # Function to handle button clicks
 def toggle_button(btn, value):
@@ -34,8 +33,14 @@ values = [f"Value {i+1}" for i in range(16)]
 # Create 16 buttons dynamically
 buttons = []
 for i, value in enumerate(values):
-    btn = tk.Button(root, text=value, width=10)
-    btn.config(command=partial(toggle_button, btn, value))  # Bind button and value using partial
+    # Create a local function to capture btn and value for each iteration
+    def create_button(value):
+        btn = tk.Button(root, text=value, width=10)
+        btn.config(command=lambda: toggle_button(btn, value))  # Correct button assignment
+        return btn
+    
+    # Create button and add to grid
+    btn = create_button(value)
     btn.grid(row=i//4, column=i%4, padx=5, pady=5)  # Arrange buttons in a 4x4 grid
     buttons.append(btn)
 

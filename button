@@ -1,0 +1,45 @@
+import tkinter as tk
+
+# Function to handle button clicks
+def toggle_button(btn, value):
+    if btn['bg'] == 'red':
+        btn.config(bg='SystemButtonFace')  # Deselect (default color)
+        selected_values.remove(value)
+    else:
+        btn.config(bg='red')  # Select (turn red)
+        selected_values.append(value)
+
+# Function to handle the Enter button
+def on_enter():
+    print("Selected values:", selected_values)
+    process_selected_values(selected_values)
+
+# Further processing after the selection
+def process_selected_values(selected_values):
+    # Your further processing logic here
+    print("Processing the selected values:", selected_values)
+    # Use selected_values as needed in this part of your code
+
+# Create the main window
+root = tk.Tk()
+root.title("Value Selector")
+
+# List to store selected values
+selected_values = []
+
+# Predefined values (you can modify these)
+values = [f"Value {i+1}" for i in range(16)]
+
+# Create 16 buttons dynamically
+buttons = []
+for i, value in enumerate(values):
+    btn = tk.Button(root, text=value, width=10, command=lambda b=btn, v=value: toggle_button(b, v))
+    btn.grid(row=i//4, column=i%4, padx=5, pady=5)  # Arrange buttons in a 4x4 grid
+    buttons.append(btn)
+
+# Add the Enter button
+enter_button = tk.Button(root, text="Enter", command=on_enter)
+enter_button.grid(row=4, column=0, columnspan=4, pady=10)
+
+# Run the application
+root.mainloop()

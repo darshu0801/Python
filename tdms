@@ -20,3 +20,30 @@ df = pd.DataFrame({channel.name: data})
 df.to_excel("output.xlsx", index=False)
 
 print("Data successfully saved to output.xlsx")
+
+
+
+
+
+import os
+from pathlib import Path
+
+def find_newest_non_zero_file(folder_path):
+    # Get all files in the folder
+    files = [f for f in Path(folder_path).iterdir() if f.is_file() and f.stat().st_size > 0]
+    
+    if not files:
+        print("No non-zero files found.")
+        return None
+
+    # Find the newest file
+    newest_file = max(files, key=lambda f: f.stat().st_ctime)
+    return newest_file
+
+# Specify the folder path
+folder_path = "path_to_your_folder"
+
+# Find and print the newest non-zero file
+newest_file = find_newest_non_zero_file(folder_path)
+if newest_file:
+    print(f"The newest non-zero file is: {newest_file}")

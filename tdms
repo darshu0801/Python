@@ -1,0 +1,22 @@
+from nptdms import TdmsFile
+import pandas as pd
+
+# Load the .tdms file
+tdms_file = TdmsFile.read("your_file.tdms")
+
+# Assuming the data is in the first group and first channel
+group = tdms_file.groups()[0]
+channel = group.channels()[0]
+
+# Get the data
+data = channel.data
+
+# Calculate the average of the first column
+average = sum(data) / len(data)
+print("Average of the first column:", average)
+
+# Save data to an Excel file
+df = pd.DataFrame({channel.name: data})
+df.to_excel("output.xlsx", index=False)
+
+print("Data successfully saved to output.xlsx")

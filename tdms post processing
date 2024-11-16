@@ -1,0 +1,33 @@
+import os
+import shutil
+from pathlib import Path
+
+def process_recent_files(src_folder, dest_folder, count=64):
+    # Create destination folder if it doesn't exist
+    Path(dest_folder).mkdir(parents=True, exist_ok=True)
+
+    # Get all files in the source folder, sorted by creation time (most recent first)
+    files = sorted(
+        [f for f in Path(src_folder).iterdir() if f.is_file() and f.stat().st_size > 0],
+        key=lambda f: f.stat().st_ctime,
+        reverse=True
+    )
+
+    # Take the most recent 'count' files
+    recent_files = files[:count]
+
+    # Copy and rename files
+    for index, file in enumerate(recent_files, start=1):
+        new_name = f"{index}{file.suffix}"  # Retain original file extension
+        dest_path = Path(dest_folder) / new_name
+        shutil.copy(file, dest_path)
+        print(f"Copied: {file} -> {dest_path}")
+
+    print(f"Successfully processed {len(recent_files)} files.")
+
+# Replace with your source and destination folder paths
+src_folder = "path_to_your_source_folder"
+dest_folder = "path_to_your_destination_folder"
+
+# Call the function
+process_recent_files(src_folder, dest_folder, count=64)

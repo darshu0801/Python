@@ -1,0 +1,24 @@
+import pyautogui
+import pygetwindow as gw
+import time
+
+# Find the window with title ending in ".vi"
+target_window = None
+for window in gw.getAllTitles():
+    if window.endswith('.vi'):
+        target_window = window
+        break
+
+if target_window:
+    # Focus the target window
+    win = gw.getWindowsWithTitle(target_window)[0]
+    win.activate()
+
+    # Wait a moment to ensure the window is focused
+    time.sleep(1)
+
+    # Press the 'End' key
+    pyautogui.press('end')
+    print(f"'End' key pressed in the window: {target_window}")
+else:
+    print("No window ending with '.vi' found.")

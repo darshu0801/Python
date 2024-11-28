@@ -1,0 +1,24 @@
+def process_html_file(file_path):
+    # Read the file
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    
+    # Initialize a list for the processed lines
+    processed_lines = []
+    
+    for line in lines:
+        if ".png" in line:
+            # Skip lines containing '.png'
+            continue
+        if "\\" in line:
+            # Replace '\' with '\\'
+            line = line.replace("\\", "\\\\")
+        processed_lines.append(line)
+    
+    # Write the processed lines back to the file
+    with open(file_path, 'w') as file:
+        file.writelines(processed_lines)
+
+# Usage
+html_file_path = "your_html_file.html"  # Replace with your HTML file's path
+process_html_file(html_file_path)

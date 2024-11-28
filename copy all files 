@@ -1,0 +1,18 @@
+import os
+import shutil
+
+# Paths
+source_folder = r'C:\Users\test\source_folder'
+destination_folder = r'C:\Users\test\new_folder'
+
+# Create new folder if it doesn't exist
+os.makedirs(destination_folder, exist_ok=True)
+
+# Copy files
+for filename in os.listdir(source_folder):
+    source_path = os.path.join(source_folder, filename)
+    destination_path = os.path.join(destination_folder, filename)
+    if os.path.isfile(source_path):  # Only copy files
+        shutil.copy(source_path, destination_path)
+
+print(f"All files copied to {destination_folder}")

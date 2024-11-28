@@ -1,17 +1,15 @@
 import os
 
-def extract_mean_unit_interval(file_path):
+def extract_value(file_path, search_str):
     """
-    Extracts the value next to 'Mean Unit Interval (ps)' in the specified .html file as a string,
+    Extracts the value next to a specific variable in the specified .html file as a string,
     excluding any associated units.
     """
     with open(file_path, 'r') as file:
         content = file.read()
 
-    # Search for the string 'Mean Unit Interval (ps)' in the content
-    search_str = "Mean Unit Interval (ps)"
+    # Search for the variable in the content
     start_idx = content.find(search_str)
-
     if start_idx != -1:
         # Extract the portion of the content after the search string
         start_idx += len(search_str)
@@ -32,9 +30,17 @@ def extract_mean_unit_interval(file_path):
 
 def find_and_process_files(folder_path):
     """
-    Finds all files containing P0, P1, ..., P10 in their names, extracts Mean Unit Interval values.
+    Finds all files containing P0, P1, ..., P10 in their names, extracts specified variable values.
     """
-    values = []
+    variables = {
+        "Mean Unit Interval (ps)": [],
+        "Minimum eye width": [],
+        "Total Jitter at BER of 10E-12": [],
+        "Deterministic Jitter Delta-Delta": [],
+        "Random Jitter (RMS)": [],
+        "Extrapolated Eye Height": []
+    }
+
     for i in range(11):  # From P0 to P10
         identifier = f"P{i}"
         
@@ -43,18 +49,24 @@ def find_and_process_files(folder_path):
             if identifier in file_name and file_name.endswith('.html'):
                 file_path = os.path.join(folder_path, file_name)
                 print(f"Processing {file_name}...")
-                value = extract_mean_unit_interval(file_path)
-                if value is not None:
-                    values.append(value)
-                else:
-                    print(f"No 'Mean Unit Interval (ps)' found in {file_name}.")
+
+                # For each variable, extract its value and append to the respective list
+                for var_name in variables:
+                    value = extract_value(file_path, var_name)
+                    if value is not None:
+                        variables[var_name].append(value)
+                    else:
+                        print(f"No '{var_name}' found in {file_name}.")
                 break  # Process only one matching file per identifier
         else:
             print(f"No file found for identifier {identifier}.")
     
-    return values
+    return variables
 
 # Usage
 folder_path = "your_folder_path"  # Replace with the path to your folder containing .html files
-mean_unit_intervals = find_and_process_files(folder_path)
-print("Extracted Mean Unit Interval values:", mean_unit_intervals)
+extracted_values = find_and_process_files(folder_path)
+
+# Print extracted values for each variable
+for var_name, values in extracted_values.items():
+    print(f"Extracted values for {var_name}: {values}")

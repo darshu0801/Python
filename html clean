@@ -22,3 +22,32 @@ def process_html_file(file_path):
 # Usage
 html_file_path = "your_html_file.html"  # Replace with your HTML file's path
 process_html_file(html_file_path)
+
+
+
+
+
+
+
+
+
+def process_html_file(file_path):
+    # Read the file as a single string
+    with open(file_path, 'r') as file:
+        content = file.read()
+    
+    # Replace '\' with '\\'
+    content = content.replace("\\", "\\\\")
+    
+    # Remove parts that refer to '.png'
+    # This assumes '.png' references are of the form 'something.png'
+    import re
+    content = re.sub(r'[^"\']*\.png', '', content)  # Removes .png references
+    
+    # Write the updated content back to the file
+    with open(file_path, 'w') as file:
+        file.write(content)
+
+# Usage
+html_file_path = "your_html_file.html"  # Replace with your HTML file's path
+process_html_file(html_file_path)

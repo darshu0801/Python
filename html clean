@@ -51,3 +51,41 @@ def process_html_file(file_path):
 # Usage
 html_file_path = "your_html_file.html"  # Replace with your HTML file's path
 process_html_file(html_file_path)
+
+
+
+
+
+
+
+
+import os
+import re
+
+def process_html_file(file_path):
+    # Read the file as a single string
+    with open(file_path, 'r') as file:
+        content = file.read()
+    
+    # Replace '\' with '\\'
+    content = content.replace("\\", "\\\\")
+    
+    # Remove parts that refer to '.png'
+    content = re.sub(r'[^"\']*\.png', '', content)  # Removes .png references
+    
+    # Write the updated content back to the file
+    with open(file_path, 'w') as file:
+        file.write(content)
+
+def process_html_files_in_folder(folder_path):
+    # Iterate through all files in the folder
+    for file_name in os.listdir(folder_path):
+        # Check if the file has a .html extension
+        if file_name.endswith('.html'):
+            file_path = os.path.join(folder_path, file_name)
+            print(f"Processing {file_path}...")
+            process_html_file(file_path)
+
+# Usage
+folder_path = "your_folder_path"  # Replace with the path to your folder containing .html files
+process_html_files_in_folder(folder_path)

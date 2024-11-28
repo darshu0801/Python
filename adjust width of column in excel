@@ -1,0 +1,36 @@
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+
+def adjust_column_width(sheet):
+    for column_cells in sheet.columns:
+        max_length = 0
+        column = column_cells[0].column  # Get the column index (1-based)
+        column_letter = get_column_letter(column)  # Convert to letter (A, B, etc.)
+        for cell in column_cells:
+            try:
+                if cell.value:  # Check if the cell has a value
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        sheet.column_dimensions[column_letter].width = max_length + 2  # Adjust width (extra space for readability)
+
+# Create a workbook and a sheet
+wb = Workbook()
+sheet = wb.active
+
+# Add some data
+data = [
+    ["Name", "Age", "Occupation"],
+    ["Alice", 25, "Software Engineer"],
+    ["Bob", 30, "Doctor"],
+    ["Charlie", 35, "Data Scientist"]
+]
+
+for row in data:
+    sheet.append(row)
+
+# Adjust column width
+adjust_column_width(sheet)
+
+# Save the workbook
+wb.save("adjusted_width.xlsx")

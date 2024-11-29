@@ -1,0 +1,22 @@
+from openpyxl import Workbook
+from openpyxl.drawing.image import Image
+
+# Create a new workbook and select the active sheet
+wb = Workbook()
+ws = wb.active
+
+# Set a specific cell where the image will be placed (e.g., A1)
+cell = "A1"
+
+# Load the image (provide the path to your image file)
+image_path = "path_to_your_image.jpg"
+img = Image(image_path)
+
+# Specify the cell where you want to place the image
+ws.add_image(img, cell)
+
+# Save the workbook
+output_file = "output_with_image.xlsx"
+wb.save(output_file)
+
+print(f"Image inserted and saved in {output_file}")

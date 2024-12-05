@@ -1,0 +1,16 @@
+file_path = "your_file.csv"
+
+# Read the file in binary mode
+with open(file_path, 'rb') as f:
+    content = bytearray(f.read())  # Use bytearray for mutability
+
+# Replace the byte at position 12 (index 11 because indexing starts at 0)
+if len(content) > 12:
+    content[11] = ord('?')  # Replace with '?' or any byte you prefer
+
+# Save the modified content back to a new file
+cleaned_file_path = "cleaned_file.csv"
+with open(cleaned_file_path, 'wb') as f:
+    f.write(content)
+
+print(f"Modified file saved as {cleaned_file_path}")

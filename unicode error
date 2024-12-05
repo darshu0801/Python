@@ -44,3 +44,21 @@ for encoding in encoding_list:
         worked = False
     if worked:
         print(encoding, ':\n', df.head())
+
+
+
+
+
+
+
+
+
+import csv
+
+# Replace 'your_file.csv' with the path to your CSV file
+with open('your_file.csv', mode='r') as file:
+    csv_reader = csv.reader(file)
+    
+    # Iterate through the rows in the CSV
+    for row in csv_reader:
+        print(row)

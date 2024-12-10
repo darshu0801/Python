@@ -1,0 +1,18 @@
+import os
+import shutil
+
+# Original file path
+original_file = r"C:\Users\test\PCIe4_DUT_8G_2MUI_P1_Lane0.html"
+destination_folder = os.path.dirname(original_file)  # Directory where files will be created
+
+# Loop for P0 to P10 and Lane0 to Lane3
+for p in range(11):  # P0 to P10
+    for lane in range(4):  # Lane0 to Lane3
+        # Construct the new filename
+        new_filename = f"PCIe4_DUT_8G_2MUI_P{p}_Lane{lane}.html"
+        new_file_path = os.path.join(destination_folder, new_filename)
+        
+        # Copy the original file to the new filename
+        shutil.copy(original_file, new_file_path)
+
+print("Files duplicated successfully!")

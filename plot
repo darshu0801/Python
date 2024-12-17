@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.patches as mpatches
 
 # Read CSV File
 file_path = 'your_file_path.csv'  # Replace with your CSV file path
@@ -53,6 +54,11 @@ plt.yticks([i * block_height for i in range(max_die + 1)], range(max_die, -1, -1
 plt.xlabel("Time (ns)")
 plt.ylabel("Die")
 plt.title("Time vs Die with W/R Blocks (Filtered Commands)")
+
+# Create legend
+legend_w = mpatches.Patch(color='lightblue', label='Single Plane Page Write Operation (W)')
+legend_r = mpatches.Patch(color='lightcoral', label='Random Data Output (R)')
+plt.legend(handles=[legend_w, legend_r], loc='upper left', fontsize=10)
 
 # Add grid for clarity
 plt.grid(True, which='both', linestyle='--', linewidth=0.5)

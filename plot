@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Read Excel File
-file_path = 'your_file_path.xlsx'  # Replace with your file path
-sheet_name = 'Sheet1'  # Update if necessary
+# Read CSV File
+file_path = 'your_file_path.csv'  # Replace with your CSV file path
 
 # Load Data
-df = pd.read_excel(file_path, sheet_name=sheet_name)
+df = pd.read_csv(file_path)
 
 # Filter rows based on Command Name
 filtered_df = df[df['Command name'].isin(['Single Plane Page Write Operation', 'Random Data Output'])]
@@ -26,8 +25,8 @@ command = filtered_df['W/R']
 max_die = die.max()
 
 # Scaling factors
-block_width = 1  # Each time unit is visually wide (adjust later if needed)
-block_height = 0.5  # Each Die occupies 0.5 cm vertically
+block_width = 1      # Each time unit is visually wide
+block_height = 0.5   # Each Die occupies 0.5 cm vertically
 
 # Convert Time(ns) to scaled units for X-axis spacing
 time_scaled = (time - time.min()) / (time.max() - time.min()) * len(time)
@@ -47,7 +46,7 @@ ax.set_ylim(0, (max_die + 1) * block_height)  # Adjust Y-axis range
 ax.invert_yaxis()  # Descending order for Die
 
 # Configure axes labels and ticks
-plt.xticks(time_scaled, labels=[f"{t} ns" for t in time], rotation=45, fontsize=8)  # Time ticks
+plt.xticks(time_scaled, labels=[f"{int(t)} ns" for t in time], rotation=45, fontsize=8)  # Time ticks
 plt.yticks([i * block_height for i in range(max_die + 1)], range(max_die, -1, -1))  # Die ticks
 
 # Labels and title

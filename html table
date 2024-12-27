@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>5x13 Table</title>
+    <title>5x13 Table with Background</title>
     <style>
         table {
             border-collapse: collapse;
@@ -14,6 +14,9 @@
             vertical-align: middle;
             padding: 5px;
         }
+        .bg-lightblue {
+            background-color: lightblue;
+        }
         img {
             max-width: 100%;
             max-height: 100px;
@@ -23,21 +26,21 @@
 <body>
     <table>
         <tr>
-            <td colspan="2"></td>
-            <td>P0</td>
-            <td>P1</td>
-            <td>P2</td>
-            <td>P3</td>
-            <td>P4</td>
-            <td>P5</td>
-            <td>P6</td>
-            <td>P7</td>
-            <td>P8</td>
-            <td>P9</td>
-            <td>P10</td>
+            <td class="bg-lightblue" colspan="2"></td>
+            <td class="bg-lightblue">P0</td>
+            <td class="bg-lightblue">P1</td>
+            <td class="bg-lightblue">P2</td>
+            <td class="bg-lightblue">P3</td>
+            <td class="bg-lightblue">P4</td>
+            <td class="bg-lightblue">P5</td>
+            <td class="bg-lightblue">P6</td>
+            <td class="bg-lightblue">P7</td>
+            <td class="bg-lightblue">P8</td>
+            <td class="bg-lightblue">P9</td>
+            <td class="bg-lightblue">P10</td>
         </tr>
         <tr>
-            <td>Lane 0</td>
+            <td class="bg-lightblue">Lane 0</td>
             <td>Worst non-transition</td>
             <td><img src="image1.png" alt="Image 1"></td>
             <td><img src="image2.png" alt="Image 2"></td>
@@ -52,7 +55,7 @@
             <td><img src="image11.png" alt="Image 11"></td>
         </tr>
         <tr>
-            <td>Lane 1</td>
+            <td class="bg-lightblue">Lane 1</td>
             <td>Worst non-transition</td>
             <td><img src="image12.png" alt="Image 12"></td>
             <td><img src="image13.png" alt="Image 13"></td>
@@ -67,7 +70,7 @@
             <td><img src="image22.png" alt="Image 22"></td>
         </tr>
         <tr>
-            <td>Lane 2</td>
+            <td class="bg-lightblue">Lane 2</td>
             <td>Worst non-transition</td>
             <td><img src="image23.png" alt="Image 23"></td>
             <td><img src="image24.png" alt="Image 24"></td>
@@ -82,7 +85,7 @@
             <td><img src="image33.png" alt="Image 33"></td>
         </tr>
         <tr>
-            <td>Lane 3</td>
+            <td class="bg-lightblue">Lane 3</td>
             <td>Worst non-transition</td>
             <td><img src="image34.png" alt="Image 34"></td>
             <td><img src="image35.png" alt="Image 35"></td>

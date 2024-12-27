@@ -1,0 +1,35 @@
+import os
+import shutil
+
+# File paths
+original_html = "path/to/original.html"  # Path to your original HTML file
+copied_html = "path/to/copied.html"      # Path for the copied HTML file
+source_images_folder = "path/to/images"  # Path to the folder containing source images
+
+# Replace function
+def replace_images_in_html(input_file, output_file, source_folder, num_images):
+    with open(input_file, "r") as file:
+        content = file.read()
+
+    # Loop through the image names and replace them with actual paths
+    for i in range(1, num_images + 1):
+        old_text = f"image{i}.png"
+        new_text = os.path.join(source_folder, f"image{i}.png").replace("\\", "/")  # Ensure proper path format
+        content = content.replace(old_text, new_text)
+
+    with open(output_file, "w") as file:
+        file.write(content)
+
+# Number of images to replace
+num_images = 44
+
+# Ensure the source images folder exists
+if os.path.exists(source_images_folder):
+    # Copy the original HTML to a new file
+    shutil.copy(original_html, copied_html)
+    
+    # Update the copied HTML file with new image paths
+    replace_images_in_html(copied_html, copied_html, source_images_folder, num_images)
+    print(f"Replaced image references in the copied HTML file.")
+else:
+    print("Source images folder does not exist. Please check the path.")

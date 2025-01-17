@@ -99,8 +99,8 @@ command = filtered_df['W/R'].reset_index(drop=True)
 # Find the maximum Die value
 max_die = die.max()
 
-# Calculate block widths based on time differences
-time_diff = time.diff().fillna(1)  # Fill the first block width with a default value of 1 ns
+# Calculate dynamic block widths for every Die
+time_diff = time.diff().shift(-1).fillna(1)  # Width = time difference; Last block gets default 1 ns
 
 # Block height
 block_height = 0.5  # Each Die occupies 0.5 cm vertically
@@ -111,7 +111,7 @@ fig, ax = plt.subplots(figsize=(12, max_die * block_height + 2))  # Dynamically 
 # Plot blocks
 for t, t_diff, d, cmd in zip(time, time_diff, die, command):
     color = 'lightblue' if cmd == 'W' else 'lightcoral'
-    adjusted_y = (d) * block_height  # Y-axis position directly maps Die (from top to bottom now)
+    adjusted_y = (max_die - d) * block_height  # Adjust Die position for descending order
     ax.add_patch(plt.Rectangle((t, adjusted_y), t_diff, block_height, color=color, ec='black'))
 
 # Set axes limits and Y-axis ordering
@@ -143,8 +143,5 @@ plt.tight_layout()
 
 # Show the plot
 plt.show()
-
-
-
 
 

@@ -66,3 +66,84 @@ plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 # Show the plot
 plt.tight_layout()
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import matplotlib.patches as mpatches
+
+# Read CSV File
+file_path = 'your_file_path.csv'  # Replace with your CSV file path
+
+# Load Data
+df = pd.read_csv(file_path)
+
+# Filter rows based on Command Name
+filtered_df = df[df['Command name'].isin(['Single Plane Page Write Operation', 'Random Data Output'])]
+
+# Map Command Name to W/R for plotting
+filtered_df['W/R'] = filtered_df['Command name'].map({
+    'Single Plane Page Write Operation': 'W',
+    'Random Data Output': 'R'
+})
+
+# Extract relevant columns
+time = filtered_df['Time(ns)'].reset_index(drop=True)  # Reset index for consistent calculations
+die = filtered_df['Die'].reset_index(drop=True)
+command = filtered_df['W/R'].reset_index(drop=True)
+
+# Find the maximum Die value
+max_die = die.max()
+
+# Calculate block widths based on time differences
+time_diff = time.diff().fillna(1)  # Fill the first block width with a default value of 1 ns
+
+# Block height
+block_height = 0.5  # Each Die occupies 0.5 cm vertically
+
+# Plot setup
+fig, ax = plt.subplots(figsize=(12, max_die * block_height + 2))  # Dynamically scale the plot size
+
+# Plot blocks
+for t, t_diff, d, cmd in zip(time, time_diff, die, command):
+    color = 'lightblue' if cmd == 'W' else 'lightcoral'
+    adjusted_y = (max_die - d) * block_height  # Adjust Die position for descending order
+    ax.add_patch(plt.Rectangle((t, adjusted_y), t_diff, block_height, color=color, ec='black'))
+
+# Set axes limits and invert Y-axis
+ax.set_xlim(time.min() - 1, time.max() + 1)  # Slight padding on X-axis
+ax.set_ylim(0, (max_die + 1) * block_height)  # Adjust Y-axis range
+ax.invert_yaxis()  # Descending order for Die
+
+# Configure axes labels and ticks
+plt.xticks(time, labels=[f"{int(t)} ns" for t in time], rotation=45, fontsize=8)  # Time ticks
+plt.yticks([i * block_height for i in range(max_die + 1)], range(max_die, -1, -1))  # Reverse Die ticks
+
+# Labels and title
+plt.xlabel("Time (ns)")
+plt.ylabel("Die")
+plt.title("Time vs Die with W/R Blocks (Filtered Commands)")
+
+# Create legend
+legend_w = mpatches.Patch(color='lightblue', label='Single Plane Page Write Operation (W)')
+legend_r = mpatches.Patch(color='lightcoral', label='Random Data Output (R)')
+plt.legend(handles=[legend_w, legend_r], loc='upper left', fontsize=10, bbox_to_anchor=(1, 1))
+
+# Add grid for clarity
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+# Adjust layout to make room for the legend
+plt.tight_layout()
+
+# Show the plot
+plt.show()

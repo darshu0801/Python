@@ -72,12 +72,6 @@ plt.show()
 
 
 
-
-
-
-
-
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.patches as mpatches
@@ -117,17 +111,19 @@ fig, ax = plt.subplots(figsize=(12, max_die * block_height + 2))  # Dynamically 
 # Plot blocks
 for t, t_diff, d, cmd in zip(time, time_diff, die, command):
     color = 'lightblue' if cmd == 'W' else 'lightcoral'
-    adjusted_y = (max_die - d) * block_height  # Adjust Die position for descending order
+    adjusted_y = (d) * block_height  # Y-axis position directly maps Die (from top to bottom now)
     ax.add_patch(plt.Rectangle((t, adjusted_y), t_diff, block_height, color=color, ec='black'))
 
-# Set axes limits and invert Y-axis
+# Set axes limits and Y-axis ordering
 ax.set_xlim(time.min() - 1, time.max() + 1)  # Slight padding on X-axis
 ax.set_ylim(0, (max_die + 1) * block_height)  # Adjust Y-axis range
-ax.invert_yaxis()  # Descending order for Die
 
 # Configure axes labels and ticks
 plt.xticks(time, labels=[f"{int(t)} ns" for t in time], rotation=45, fontsize=8)  # Time ticks
-plt.yticks([i * block_height for i in range(max_die + 1)], range(max_die, -1, -1))  # Reverse Die ticks
+plt.yticks(
+    [i * block_height for i in range(max_die + 1)],  # Position ticks evenly along Y-axis
+    range(max_die, -1, -1)  # Tick labels go from max_die to 0
+)
 
 # Labels and title
 plt.xlabel("Time (ns)")
@@ -147,3 +143,8 @@ plt.tight_layout()
 
 # Show the plot
 plt.show()
+
+
+
+
+

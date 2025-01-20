@@ -13,29 +13,37 @@ sheet = wb.active
 output_wb = Workbook()
 output_sheet = output_wb.active
 
+# Add headers for clarity
+output_sheet.append(["Consecutive Event Difference", "Non-Operation to Operation Difference"])
+
 # Assuming the time is in column B (2nd) and events in column D (4th)
 time_col = 2  # Time is in the 2nd column (B)
 event_col = 4  # Events are in the 4th column (D)
 
 # Initialize variables
-prev_time = None
-time_differences = []
+prev_operation_time = None
+prev_non_operation_time = None
 
 # Loop through each row in the sheet
 for row in sheet.iter_rows(min_row=2, max_col=event_col, values_only=True):  # Skipping the header row
     time = row[time_col - 1]  # Column B
     event = row[event_col - 1]  # Column D
-    
-    if event == "Quad Plane Page Write Operation":  # If event is "Quad Plane Page Write Operation"
-        if prev_time is not None:
-            # Calculate the time difference between this and the previous "Quad Plane Page Write Operation"
-            time_diff = time - prev_time
-            time_differences.append(time_diff)
-        prev_time = time
 
-# Write the results to the new sheet (output Excel)
-for time_diff in time_differences:
-    output_sheet.append([time_diff])
+    if event == "Quad Plane Page Write Operation":  # If the event is "Quad Plane Page Write Operation"
+        # Calculate the difference for consecutive events
+        consecutive_diff = time - prev_operation_time if prev_operation_time is not None else None
+
+        # Calculate the difference with the last non-operation event
+        non_operation_diff = time - prev_non_operation_time if prev_non_operation_time is not None else None
+
+        # Append both differences to the output sheet
+        output_sheet.append([consecutive_diff, non_operation_diff])
+
+        # Update the previous operation time
+        prev_operation_time = time
+    else:
+        # Update the last non-operation time
+        prev_non_operation_time = time
 
 # Save the result to a new Excel file
 output_wb.save(output_file)

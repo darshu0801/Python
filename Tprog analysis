@@ -1,23 +1,43 @@
-import pandas as pd
+from openpyxl import load_workbook
+from openpyxl import Workbook
 
 # Load the Excel file
 input_file = 'input.xlsx'  # Replace with your input file path
 output_file = 'output.xlsx'  # Replace with your desired output file path
 
-# Read the input Excel file
-df = pd.read_excel(input_file)
+# Load the workbook and select the active sheet
+wb = load_workbook(input_file)
+sheet = wb.active
 
-# Assuming columns are named "Time" and "Event", replace with actual names if different
-time_col = 'Time'  # Column containing time
-event_col = 'Event'  # Column containing events
+# Create a new workbook for output
+output_wb = Workbook()
+output_sheet = output_wb.active
 
-# Filter rows with "Quad Plane Page Write Operation"
-filtered_df = df[df[event_col] == "Quad Plane Page Write Operation"]
+# Assuming the time is in column B (2nd) and events in column D (4th)
+time_col = 2  # Time is in the 2nd column (B)
+event_col = 4  # Events are in the 4th column (D)
 
-# Calculate time differences between consecutive rows (no datetime conversion)
-filtered_df['Time Difference'] = filtered_df[time_col].diff()
+# Initialize variables
+prev_time = None
+time_differences = []
+
+# Loop through each row in the sheet
+for row in sheet.iter_rows(min_row=2, max_col=event_col, values_only=True):  # Skipping the header row
+    time = row[time_col - 1]  # Column B
+    event = row[event_col - 1]  # Column D
+    
+    if event == "Quad Plane Page Write Operation":  # If event is "Quad Plane Page Write Operation"
+        if prev_time is not None:
+            # Calculate the time difference between this and the previous "Quad Plane Page Write Operation"
+            time_diff = time - prev_time
+            time_differences.append(time_diff)
+        prev_time = time
+
+# Write the results to the new sheet (output Excel)
+for time_diff in time_differences:
+    output_sheet.append([time_diff])
 
 # Save the result to a new Excel file
-filtered_df.to_excel(output_file, index=False)
+output_wb.save(output_file)
 
 print(f"Time differences saved to {output_file}")

@@ -26,3 +26,48 @@ cleaned_data = remove_variable_duration_spikes(data)
 cleaned_data.to_csv('cleaned_power_data.csv', index=False)
 
 print("Spikes with variable duration removed. Cleaned data saved to 'cleaned_power_data.csv'.")
+
+
+
+
+
+
+
+
+
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+# Load the Excel file
+# Replace 'power_data.xlsx' with your actual file path
+file_path = 'power_data.xlsx'
+sheet_name = 'data'
+column_name = 'P_avg'
+
+def remove_variable_duration_spikes(df, column):
+    """
+    Use Isolation Forest to detect and remove spikes in power data with variable durations.
+    """
+    # Initialize Isolation Forest
+    iso_forest = IsolationForest(contamination=0.01, random_state=42)
+    
+    # Fit the model on the specified column
+    df['anomaly'] = iso_forest.fit_predict(df[[column]])
+    
+    # Keep only normal data (-1 indicates anomalies)
+    cleaned_df = df[df['anomaly'] != -1].drop(columns=['anomaly'])
+    return cleaned_df
+
+# Read the specific sheet and column
+data = pd.read_excel(file_path, sheet_name=sheet_name)
+if column_name not in data.columns:
+    raise ValueError(f"Column '{column_name}' not found in sheet '{sheet_name}'.")
+
+# Apply the spike removal
+cleaned_data = remove_variable_duration_spikes(data, column_name)
+
+# Save the cleaned data back to an Excel file
+output_file = 'cleaned_power_data.xlsx'
+cleaned_data.to_excel(output_file, index=False)
+
+print(f"Spikes removed. Cleaned data saved to '{output_file}'.")

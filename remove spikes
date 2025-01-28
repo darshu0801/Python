@@ -71,3 +71,75 @@ output_file = 'cleaned_power_data.xlsx'
 cleaned_data.to_excel(output_file, index=False)
 
 print(f"Spikes removed. Cleaned data saved to '{output_file}'.")
+
+
+
+
+
+
+
+
+
+
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import IsolationForest
+
+# Load the Excel file
+file_path = 'power_data.xlsx'
+sheet_name = 'data'
+column_name = 'P_avg'
+
+def preprocess_data(df, column):
+    """
+    Apply smoothing to preprocess data for better anomaly detection.
+    """
+    # Rolling median to reduce noise
+    df[f'{column}_smoothed'] = df[column].rolling(window=5, center=True).median()
+    # Fill NaN values introduced by rolling
+    df[f'{column}_smoothed'].fillna(df[column], inplace=True)
+    return df
+
+def remove_spikes_with_isolation_forest(df, column):
+    """
+    Use Isolation Forest to detect and remove spikes.
+    """
+    # Initialize Isolation Forest
+    iso_forest = IsolationForest(contamination=0.01, random_state=42)
+    
+    # Fit the model on smoothed power values
+    df['anomaly'] = iso_forest.fit_predict(df[[column]])
+    
+    # Keep only normal data (-1 indicates anomalies)
+    cleaned_df = df[df['anomaly'] != -1].drop(columns=['anomaly'])
+    return cleaned_df
+
+def remove_residual_spikes(df, column):
+    """
+    Remove residual spikes using Z-score analysis.
+    """
+    # Calculate Z-scores
+    df['z_score'] = (df[column] - df[column].mean()) / df[column].std()
+    # Keep rows where the Z-score is within the normal range
+    cleaned_df = df[np.abs(df['z_score']) < 3].drop(columns=['z_score'])
+    return cleaned_df
+
+# Step 1: Read the Excel file
+data = pd.read_excel(file_path, sheet_name=sheet_name)
+if column_name not in data.columns:
+    raise ValueError(f"Column '{column_name}' not found in sheet '{sheet_name}'.")
+
+# Step 2: Preprocess data (smoothing)
+data = preprocess_data(data, column_name)
+
+# Step 3: Remove spikes using Isolation Forest
+cleaned_data = remove_spikes_with_isolation_forest(data, f'{column_name}_smoothed')
+
+# Step 4: Remove residual spikes using Z-score analysis
+final_cleaned_data = remove_residual_spikes(cleaned_data, f'{column_name}_smoothed')
+
+# Step 5: Save the cleaned data back to an Excel file
+output_file = 'cleaned_power_data.xlsx'
+final_cleaned_data.to_excel(output_file, index=False)
+
+print(f"Spikes removed and cleaned data saved to '{output_file}'.")

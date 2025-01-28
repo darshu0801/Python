@@ -1,0 +1,28 @@
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+# Load power data
+# Replace 'power_data.csv' with your actual file path
+data = pd.read_csv('power_data.csv')  # Ensure the file has 'timestamp' and 'power' columns
+
+def remove_variable_duration_spikes(df):
+    """
+    Use Isolation Forest to detect and remove spikes in power data with variable durations.
+    """
+    # Initialize Isolation Forest
+    iso_forest = IsolationForest(contamination=0.01, random_state=42)
+    
+    # Fit the model on the power column
+    df['anomaly'] = iso_forest.fit_predict(df[['power']])
+    
+    # Keep only normal data (-1 indicates anomalies)
+    cleaned_df = df[df['anomaly'] != -1].drop(columns=['anomaly'])
+    return cleaned_df
+
+# Apply the spike removal
+cleaned_data = remove_variable_duration_spikes(data)
+
+# Save the cleaned data to a new CSV file
+cleaned_data.to_csv('cleaned_power_data.csv', index=False)
+
+print("Spikes with variable duration removed. Cleaned data saved to 'cleaned_power_data.csv'.")

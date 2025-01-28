@@ -159,48 +159,47 @@ file_path = 'power_data.xlsx'
 sheet_name = 'data'
 column_name = 'P_avg'
 
-def detect_and_remove_spikes(df, column, spike_duration=15):
+def remove_short_spikes(df, column, spike_duration_threshold=15):
     """
-    Detect spikes based on sudden changes and duration, and replace them with 0.
+    Detect and remove short-duration spikes in power values.
     """
-    # Create a column to store spike-removed values
+    # Create a column to store cleaned power values
     df['cleaned_power'] = df[column]
 
-    # Identify sudden changes
-    sudden_change = (df[column].diff().abs() > 0.5)  # Change threshold (adjust 0.5 as needed)
-    df['is_spike'] = 0
-    df.loc[sudden_change, 'is_spike'] = 1
+    # Detect sudden changes
+    df['sudden_change'] = df[column].diff().abs() > 0.5  # Threshold for sudden change (adjust as needed)
 
-    # Track spike duration
+    # Track the duration of spikes
     spike_start = None
     for i in range(len(df)):
-        if df.loc[i, 'is_spike'] == 1:
+        if df.loc[i, 'sudden_change']:
             if spike_start is None:
-                spike_start = i
+                spike_start = i  # Start of the spike
         else:
             if spike_start is not None:
+                # Calculate spike duration in seconds
                 duration = (df.loc[i, 'timestamp'] - df.loc[spike_start, 'timestamp']).total_seconds()
-                if duration < spike_duration:
-                    # Mark the spike period as invalid (set values to 0)
-                    df.loc[spike_start:i, 'cleaned_power'] = 0
+                if duration < spike_duration_threshold:
+                    # Replace values within this spike with 0
+                    df.loc[spike_start:i - 1, 'cleaned_power'] = 0
                 spike_start = None
 
+    # Drop unnecessary columns
+    df.drop(columns=['sudden_change'], inplace=True)
     return df
 
-# Read the specific sheet and column
-data = pd.read_excel(file_path, sheet_name=sheet_name)
-
-# Ensure the timestamp column exists
+# Step 1: Read the Excel file
+data = pd.read_excel(file_path, sheet_name=sheet_name, dtype={column_name: float})  # Ensure precision is preserved
 if 'timestamp' not in data.columns or column_name not in data.columns:
     raise ValueError(f"Ensure 'timestamp' and '{column_name}' columns are present in the sheet '{sheet_name}'.")
 
-# Convert timestamp to datetime for duration calculations
+# Convert the timestamp column to datetime for proper duration calculation
 data['timestamp'] = pd.to_datetime(data['timestamp'])
 
-# Detect and remove spikes
-cleaned_data = detect_and_remove_spikes(data, column_name)
+# Step 2: Remove short-duration spikes
+cleaned_data = remove_short_spikes(data, column_name)
 
-# Save the cleaned data to a new Excel file
+# Step 3: Save the cleaned data to a new Excel file
 output_file = 'cleaned_power_data.xlsx'
 cleaned_data.to_excel(output_file, index=False)
 

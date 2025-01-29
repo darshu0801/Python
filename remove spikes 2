@@ -29,6 +29,7 @@ def filter_spikes(data, duration_threshold=15):
 
             # If the spike lasts less than the duration threshold, replace values with 0
             if spike_duration < duration_threshold:
+                # Replace all values in the spike with 0
                 filtered_data[spike_start:j] = 0
             i = j  # Skip the processed spike
         else:

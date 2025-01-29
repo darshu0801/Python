@@ -8,54 +8,6 @@ column_name = 'P_Avg'
 # Read the specified sheet and column
 df = pd.read_excel(file_path, sheet_name=sheet_name)
 
-# Function to identify and handle spikes
-def handle_spikes(data, threshold=15):
-    spikes = []  # To store indices of spike values
-    start_index = None  # To track the start of a spike
-
-    for i in range(1, len(data)):
-        # Check for a sudden change (spike)
-        if abs(data[i] - data[i - 1]) > 1:  # Adjust the threshold as needed
-            if start_index is None:
-                start_index = i  # Mark the start of the spike
-        else:
-            if start_index is not None:
-                # Check if the spike duration is less than 15 seconds
-                if (i - start_index) < threshold:
-                    spikes.extend(range(start_index, i))  # Mark all values in the spike
-                start_index = None  # Reset the spike tracker
-
-    # Set spike values to 0
-    data[spikes] = 0
-    return data
-
-# Apply the function to the specified column
-df[column_name] = handle_spikes(df[column_name])
-
-# Save the modified data back to the Excel file
-output_file_path = 'Book3_modified.xlsx'
-df.to_excel(output_file_path, index=False, sheet_name=sheet_name)
-
-print(f"Spike handling complete. Modified data saved to {output_file_path}.")
-
-
-
-
-
-
-
-
-
-import pandas as pd
-
-# Load the Excel file
-file_path = 'Book3.xlsx'
-sheet_name = 'data'
-column_name = 'P_Avg'
-
-# Read the specified sheet and column
-df = pd.read_excel(file_path, sheet_name=sheet_name)
-
 # Function to filter out short spikes
 def filter_spikes(data, duration_threshold=15):
     filtered_data = data.copy()  # Create a copy of the data to modify
@@ -63,21 +15,21 @@ def filter_spikes(data, duration_threshold=15):
 
     while i < len(data):
         # Check if the current value is a spike (sudden increase)
-        if i > 0 and data[i] > data[i - 1] + 0.5:  # Adjust the spike threshold as needed
+        if i > 0 and data[i] > data[i - 1] + 0.1:  # Adjust the spike threshold as needed
             spike_start = i
             spike_value = data[i]
 
             # Check how long the spike lasts
             j = i + 1
-            while j < len(data) and data[j] >= spike_value:
+            while j < len(data) and data[j] >= spike_value - 0.1:  # Allow minor fluctuations
                 j += 1
 
             # Calculate the duration of the spike
             spike_duration = j - spike_start
 
-            # If the spike lasts less than the duration threshold, ignore it
+            # If the spike lasts less than the duration threshold, replace values with 0
             if spike_duration < duration_threshold:
-                filtered_data[spike_start:j] = data[spike_start - 1]  # Revert to the pre-spike value
+                filtered_data[spike_start:j] = 0
             i = j  # Skip the processed spike
         else:
             i += 1  # Move to the next value

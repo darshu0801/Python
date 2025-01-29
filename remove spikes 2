@@ -1,0 +1,39 @@
+import pandas as pd
+
+# Load the Excel file
+file_path = 'Book3.xlsx'
+sheet_name = 'data'
+column_name = 'P_Avg'
+
+# Read the specified sheet and column
+df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+# Function to identify and handle spikes
+def handle_spikes(data, threshold=15):
+    spikes = []  # To store indices of spike values
+    start_index = None  # To track the start of a spike
+
+    for i in range(1, len(data)):
+        # Check for a sudden change (spike)
+        if abs(data[i] - data[i - 1]) > 1:  # Adjust the threshold as needed
+            if start_index is None:
+                start_index = i  # Mark the start of the spike
+        else:
+            if start_index is not None:
+                # Check if the spike duration is less than 15 seconds
+                if (i - start_index) < threshold:
+                    spikes.extend(range(start_index, i))  # Mark all values in the spike
+                start_index = None  # Reset the spike tracker
+
+    # Set spike values to 0
+    data[spikes] = 0
+    return data
+
+# Apply the function to the specified column
+df[column_name] = handle_spikes(df[column_name])
+
+# Save the modified data back to the Excel file
+output_file_path = 'Book3_modified.xlsx'
+df.to_excel(output_file_path, index=False, sheet_name=sheet_name)
+
+print(f"Spike handling complete. Modified data saved to {output_file_path}.")

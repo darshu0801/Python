@@ -1,6 +1,9 @@
 import os
 import pandas as pd
 
+# Define the folder path where log files are stored
+log_folder = "your/folder/path/here"
+
 def extract_second_column(file_path):
     """Extracts the second column from a log file."""
     values = []
@@ -36,12 +39,13 @@ output_data = {}
 
 for entry in log_order:
     if isinstance(entry, list):  # Group of 16 logs to be averaged
-        existing_logs = [f for f in entry if os.path.exists(f)]
+        existing_logs = [os.path.join(log_folder, f) for f in entry if os.path.exists(os.path.join(log_folder, f))]
         if existing_logs:
             output_data[entry[0].split('.')[0]] = average_log_values(existing_logs)
     else:
-        if os.path.exists(entry):
-            output_data[entry.split('.')[0]] = extract_second_column(entry)
+        log_path = os.path.join(log_folder, entry)
+        if os.path.exists(log_path):
+            output_data[entry.split('.')[0]] = extract_second_column(log_path)
 
 # Convert to DataFrame and save to Excel
 max_length = max(len(v) for v in output_data.values())
@@ -53,5 +57,5 @@ df = pd.DataFrame(output_data)
 df.to_excel("output.xlsx", index=False)
 
 
-This script will read the log files, extract the second column, compute averages for grouped workloads, and save the output to an Excel file. Let me know if you need modifications!
+I've added a line to define the folder path where the log files are stored and updated the script to use this path when accessing files. Replace "your/folder/path/here" with the actual path to your logs. Let me know if you need any more modifications!
 

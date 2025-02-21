@@ -1,0 +1,24 @@
+import os import pandas as pd
+
+def extract_second_column(file_path): """Extracts the second column from a log file.""" values = [] with open(file_path, 'r') as file: for line in file: parts = line.split() if len(parts) >= 2: values.append(float(parts[1])) return values
+
+def average_log_values(log_files): """Computes the average of the second column values across multiple log files.""" combined_values = [] log_data = [extract_second_column(f) for f in log_files] min_length = min(len(v) for v in log_data)  # Ensure equal row count
+
+for i in range(min_length):
+    avg_value = sum(log_data[j][i] for j in range(len(log_files))) / len(log_files)
+    combined_values.append(avg_value)
+
+return combined_values
+
+log_order = [ "SW_SLC_bw.1.log", "SR_SLC_bw.1.log", [f"RR_SLC_iops.{i}.log" for i in range(1, 17)], "SW_TLC1_bw.1.log", "SW_TLC_bw.1.log", "SR_SLC_bw.1.log", [f"RR_TLC_iops.{i}.log" for i in range(1, 17)], [f"RW_SLC_iops.{i}.log" for i in range(1, 17)], [f"RW_TLC_iops.{i}.log" for i in range(1, 17)] ]
+
+output_data = {}
+
+for entry in log_order: if isinstance(entry, list):  # Group of 16 logs to be averaged existing_logs = [f for f in entry if os.path.exists(f)] if existing_logs: output_data[entry[0].split('.')[0]] = average_log_values(existing_logs) else: if os.path.exists(entry): output_data[entry.split('.')[0]] = extract_second_column(entry)
+
+Convert to DataFrame and save to Excel
+
+max_length = max(len(v) for v in output_data.values()) for key in output_data: while len(output_data[key]) < max_length: output_data[key].append(None)  # Fill missing rows with None
+
+df = pd.DataFrame(output_data) df.to_excel("output.xlsx", index=False)
+

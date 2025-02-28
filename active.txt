@@ -1,0 +1,81 @@
+#SW_SLC
+
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=1 --size=1G --time_based --runtime=120s --write_bw_log=SW_SLC --log_avg_msec=1000 --output=SW_SLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a SW_SLC.txt
+
+#SR_SLC
+
+fio --name=SeqRead --rw=read --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=1 --size=1G --time_based --runtime=120s --write_bw_log=SR_SLC --log_avg_msec=1000 --output=SR_SLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a SR_SLC.txt
+
+#RR_SLC
+
+fio --name=RanRead --rw=randread --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=16 --size=1G --time_based --runtime=120s --write_iops_log=RR_SLC --log_avg_msec=1000 --output=RR_SLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a RR_SLC.txt
+
+#idle1
+
+sleep 120
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a idle.txt
+
+#SW_TLC
+
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=1 --size=100% --time_based --runtime=120s --write_bw_log=SW_TLC1 --log_avg_msec=1000 --output=SW_TLC1.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a SW_TLC1.txt
+
+#idle2
+
+sleep 300
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a idle.txt
+
+#SW_TLC
+
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=1 --size=100% --time_based --runtime=5000s --write_bw_log=SW_TLC --log_avg_msec=1000 --output=SW_TLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a SW_TLC.txt
+
+#idle3
+
+sleep 300
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a idle.txt
+
+#SR_TLC
+
+fio --name=SeqRead --rw=read --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=1 --size=100% --time_based --runtime=120s --write_bw_log=SR_TLC --log_avg_msec=1000 --output=SR_TLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a SR_TLC.txt
+
+#RR_TLC
+
+fio --name=RanRead --rw=randread --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=16 --size=100% --time_based --runtime=120s --write_iops_log=RR_TLC --log_avg_msec=1000 --output=RR_TLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a RR_TLC.txt
+
+
+nvme fw-download /dev/nvme0 --fw=/home/user/Desktop/BM9C1a/Dell/Releases/DV2/69430000_20250224_Format.bin --xfer=0x20000
+
+nvme fw-commit /dev/nvme0 --slot=0 --action=1
+
+nvme reset /dev/nvme0
+
+
+#RW_SLC
+
+fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=16 --norandommap --randrepeat=0 --size=1G --time_based --runtime=120s --write_iops_log=RW_SLC --log_avg_msec=1000 --output=RW_SLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a RW_SLC.txt
+
+sleep 120
+
+#RW_TLC
+
+fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=16 --norandommap --randrepeat=0 --size=100% --time_based --runtime=120s --write_iops_log=RW_TLC --log_avg_msec=1000 --output=RW_TLC.txt
+
+nvme smart-log /dev/nvme0n1 | grep temperature | tee -a RW_TLC.txt

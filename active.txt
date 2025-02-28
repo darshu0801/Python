@@ -79,3 +79,129 @@ sleep 120
 fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=/dev/nvme0n1 --numjobs=16 --norandommap --randrepeat=0 --size=100% --time_based --runtime=120s --write_iops_log=RW_TLC --log_avg_msec=1000 --output=RW_TLC.txt
 
 nvme smart-log /dev/nvme0n1 | grep temperature | tee -a RW_TLC.txt
+
+
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+
+# Function to get the OS drive
+get_os_drive() {
+    OS_DRIVE=$(lsblk -o MOUNTPOINT,KNAME | grep " /$" | awk '{print $2}')
+    echo "/dev/$OS_DRIVE"
+}
+
+# List available drives for user selection
+echo "Available drives:"
+DRIVES=($(lsblk -d -n -o NAME | grep -E "nvme|sd"))  # Store drive names in an array
+
+# Display drive list
+for i in "${!DRIVES[@]}"; do
+    SIZE=$(lsblk -d -n -o SIZE "/dev/${DRIVES[$i]}")  # Get drive size
+    echo "$((i+1))) /dev/${DRIVES[$i]} ($SIZE)"
+done
+
+# Prompt user to select a drive
+read -p "Select the drive number to run tests on: " CHOICE
+
+# Validate input
+if [[ ! "$CHOICE" =~ ^[0-9]+$ ]] || ((CHOICE < 1 || CHOICE > ${#DRIVES[@]})); then
+    echo "Invalid selection. Exiting."
+    exit 1
+fi
+
+# Set the selected drive
+TARGET_DRIVE="/dev/${DRIVES[$((CHOICE-1))]}"
+OS_DRIVE=$(get_os_drive)
+
+# Check if the selected drive is the OS drive
+if [[ "$TARGET_DRIVE" == "$OS_DRIVE" ]]; then
+    echo "Error: You are trying to run FIO on the OS drive ($OS_DRIVE). Aborting!"
+    exit 1
+fi
+
+echo "Selected drive: $TARGET_DRIVE"
+echo "Proceeding with the tests..."
+
+# Read firmware file location from FW_LOCATION.txt
+if [[ ! -f FW_LOCATION.txt ]]; then
+    echo "Error: FW_LOCATION.txt not found."
+    exit 1
+fi
+
+FW_FILE=$(head -n 1 FW_LOCATION.txt)
+
+if [[ ! -f "$FW_FILE" ]]; then
+    echo "Error: Firmware file not found at $FW_FILE"
+    exit 1
+fi
+
+echo "Firmware file: $FW_FILE"
+
+# Run FIO workloads
+
+# SW_SLC
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=1G --time_based --runtime=120s --write_bw_log=SW_SLC --log_avg_msec=1000 --output=SW_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a SW_SLC.txt
+
+# SR_SLC
+fio --name=SeqRead --rw=read --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=1G --time_based --runtime=120s --write_bw_log=SR_SLC --log_avg_msec=1000 --output=SR_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a SR_SLC.txt
+
+# RR_SLC
+fio --name=RanRead --rw=randread --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --size=1G --time_based --runtime=120s --write_iops_log=RR_SLC --log_avg_msec=1000 --output=RR_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RR_SLC.txt
+
+# Idle 1
+sleep 120
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a idle.txt
+
+# SW_TLC
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=100% --time_based --runtime=120s --write_bw_log=SW_TLC1 --log_avg_msec=1000 --output=SW_TLC1.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a SW_TLC1.txt
+
+# Idle 2
+sleep 300
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a idle.txt
+
+# SW_TLC (Long run)
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=100% --time_based --runtime=5000s --write_bw_log=SW_TLC --log_avg_msec=1000 --output=SW_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a SW_TLC.txt
+
+# Idle 3
+sleep 300
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a idle.txt
+
+# SR_TLC
+fio --name=SeqRead --rw=read --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=100% --time_based --runtime=120s --write_bw_log=SR_TLC --log_avg_msec=1000 --output=SR_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a SR_TLC.txt
+
+# RR_TLC
+fio --name=RanRead --rw=randread --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --size=100% --time_based --runtime=120s --write_iops_log=RR_TLC --log_avg_msec=1000 --output=RR_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RR_TLC.txt
+
+# Firmware Update
+nvme fw-download $TARGET_DRIVE --fw=$FW_FILE --xfer=0x20000
+nvme fw-commit $TARGET_DRIVE --slot=0 --action=1
+nvme reset $TARGET_DRIVE
+
+# RW_SLC
+fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --norandommap --randrepeat=0 --size=1G --time_based --runtime=120s --write_iops_log=RW_SLC --log_avg_msec=1000 --output=RW_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RW_SLC.txt
+
+# Idle 4
+sleep 120
+
+# RW_TLC
+fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --norandommap --randrepeat=0 --size=100% --time_based --runtime=120s --write_iops_log=RW_TLC --log_avg_msec=1000 --output=RW_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RW_TLC.txt
+
+echo "Script execution completed."

@@ -64,3 +64,45 @@ line 20: warning: Skipping data file with no valid points
 gnuplot> plot "-" using 1:2 title "Read Speed (MB/s)" with lines lw 2 lc rgb "blue",      "-" using 1:2 title "Write Speed (MB/s)" with lines lw 2 lc rgb "red"
                                                                                                                                                                ^
          line 20: x range is invalid
+
+
+
+
+
+#!/bin/bash
+
+# Check if device name is provided
+if [ -z "$1" ]; then
+    echo "Usage: ./ssd_speed_plot.sh <nvme_device>"
+    echo "Example: ./ssd_speed_plot.sh nvme0n1"
+    exit 1
+fi
+
+DEVICE=$1
+COUNT=0
+
+# Start gnuplot
+gnuplot -persist <<EOF
+set title "Live SSD Speed Monitoring ($DEVICE)"
+set xlabel "Time (s)"
+set ylabel "Speed (MB/s)"
+set yrange [0:*]
+set grid
+set style data lines
+set key outside
+plot "-" using 1:2 title "Read Speed (MB/s)" with lines lw 2 lc rgb "blue", \
+     "-" using 1:2 title "Write Speed (MB/s)" with lines lw 2 lc rgb "red"
+EOF
+
+# Capture live data
+while true; do
+    OUTPUT=$(iostat -dxk 1 1 | grep "$DEVICE")
+    if [ -n "$OUTPUT" ]; then
+        COUNT=$((COUNT + 1))
+        READ_SPEED=$(echo "$OUTPUT" | awk '{print $6/1024}')  # Convert kB/s to MB/s
+        WRITE_SPEED=$(echo "$OUTPUT" | awk '{print $7/1024}') # Convert kB/s to MB/s
+        echo "$COUNT $READ_SPEED" >> read_speed.dat
+        echo "$COUNT $WRITE_SPEED" >> write_speed.dat
+    fi
+    sleep 1
+done &

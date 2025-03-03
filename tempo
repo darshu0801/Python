@@ -1,1 +1,43 @@
-iostat -dxk 1 | awk '/nvme0n1/ {print NR, $6/1024; fflush()}' | gnuplot -p -e "set yrange [0:*]; set xlabel 'Time (s)'; set ylabel 'Write Speed (MB/s)'; plot '-' using 1:2 with lines title 'Write Speed (MB/s)'"
+#!/bin/bash
+
+# Check if device name is provided
+if [ -z "$1" ]; then
+    echo "Usage: ./ssd_speed_plot.sh <nvme_device>"
+    echo "Example: ./ssd_speed_plot.sh nvme0n1"
+    exit 1
+fi
+
+DEVICE=$1
+
+# Run gnuplot and feed data into it
+gnuplot -persist <<EOF
+set title "Live SSD Speed Monitoring ($DEVICE)"
+set xlabel "Time (s)"
+set ylabel "Speed (MB/s)"
+set yrange [0:*]
+set grid
+set style data lines
+set key outside
+plot "-" using 1:2 title "Read Speed (MB/s)" with lines lw 2 lc rgb "blue", \
+     "-" using 1:2 title "Write Speed (MB/s)" with lines lw 2 lc rgb "red"
+
+stats = 0
+while (1) {
+    stats = stats + 1
+    cmd = "iostat -dxk 1 1 | grep " . DEVICE
+    cmd | getline result
+    close(cmd)
+
+    if (result) {
+        split(result, arr)
+        read_speed = arr[6] / 1024  # Convert kB/s to MB/s
+        write_speed = arr[7] / 1024 # Convert kB/s to MB/s
+        print stats, read_speed
+        print ""
+        print stats, write_speed
+        print "e"
+        fflush(stdout)
+    }
+    system("sleep 1")
+}
+EOF

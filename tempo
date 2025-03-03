@@ -41,3 +41,26 @@ while (1) {
     system("sleep 1")
 }
 EOF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+line 20: warning: Skipping data file with no valid points
+         line 20: warning: Skipping data file with no valid points
+
+gnuplot> plot "-" using 1:2 title "Read Speed (MB/s)" with lines lw 2 lc rgb "blue",      "-" using 1:2 title "Write Speed (MB/s)" with lines lw 2 lc rgb "red"
+                                                                                                                                                               ^
+         line 20: x range is invalid

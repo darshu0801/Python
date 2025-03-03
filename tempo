@@ -1,0 +1,1 @@
+iostat -dxk 1 | awk '/nvme0n1/ {print NR, $6/1024; fflush()}' | gnuplot -p -e "set yrange [0:*]; set xlabel 'Time (s)'; set ylabel 'Write Speed (MB/s)'; plot '-' using 1:2 with lines title 'Write Speed (MB/s)'"

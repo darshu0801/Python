@@ -106,3 +106,59 @@ while true; do
     fi
     sleep 1
 done
+
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+
+# Check if device name is provided
+if [ -z "$1" ]; then
+    echo "Usage: ./ssd_speed_plot.sh <nvme_device>"
+    echo "Example: ./ssd_speed_plot.sh nvme0n1"
+    exit 1
+fi
+
+DEVICE=$1
+
+# Ensure iostat is installed
+if ! command -v iostat &> /dev/null; then
+    echo "Error: 'iostat' not found! Install it using: sudo apt install sysstat -y"
+    exit 1
+fi
+
+# Capture and log live data
+rm -f /tmp/ssd_speed.dat
+touch /tmp/ssd_speed.dat
+
+# Start gnuplot in the background
+gnuplot -persist <<EOF
+set title "Live SSD Speed Monitoring ($DEVICE)"
+set xlabel "Time (s)"
+set ylabel "Total Speed (MB/s)"
+set yrange [0:*]
+set grid
+set style data lines
+set key outside
+plot "< tail -n 100 /tmp/ssd_speed.dat" using 1:2 title "Total Speed (MB/s)" with lines lw 2 lc rgb "blue"
+EOF &
+
+COUNT=0
+while true; do
+    OUTPUT=$(iostat -dxm 1 1 | grep "$DEVICE")
+    if [ -n "$OUTPUT" ]; then
+        COUNT=$((COUNT + 1))
+        READ_SPEED=$(echo "$OUTPUT" | awk '{print $3}')  # Read MB/s
+        WRITE_SPEED=$(echo "$OUTPUT" | awk '{print $9}') # Write MB/s
+        TOTAL_SPEED=$(echo "$READ_SPEED + $WRITE_SPEED" | bc) # Sum of both
+        echo "$COUNT $TOTAL_SPEED" >> /tmp/ssd_speed.dat
+    fi
+    sleep 1
+done

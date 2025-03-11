@@ -1,49 +1,35 @@
 #!/bin/bash
 
-# Check if device name is provided
-if [ -z "$1" ]; then
-    echo "Usage: ./ssd_speed_plot.sh <nvme_device>"
-    echo "Example: ./ssd_speed_plot.sh nvme0n1"
-    exit 1
-fi
+# Log file for data
+LOG_FILE="/tmp/ssd_usage.log"
+DEVICE="nvme0n1"  # Change this to match your SSD device
 
-DEVICE=$1
+# Clear previous data
+echo "" > $LOG_FILE
 
-# Ensure iostat is installed
-if ! command -v iostat &> /dev/null; then
-    echo "Error: 'iostat' not found! Install it using: sudo apt install sysstat -y"
-    exit 1
-fi
+# Start iostat monitoring
+echo "Monitoring SSD performance... Press Ctrl+C to stop."
 
-# Capture and log live data
-rm -f /tmp/ssd_speed.dat
-touch /tmp/ssd_speed.dat
-
-COUNT=0
-
-# Start gnuplot in live mode
-gnuplot -persist <<EOF &
-set title "Live SSD Speed Monitoring ($DEVICE)"
-set xlabel "Time (s)"
-set ylabel "Speed (MB/s)"
-set yrange [0:*]
-set grid
-set style data lines
-set key outside
-plot "/tmp/ssd_speed.dat" using 1:2 title "Read Speed (MB/s)" with lines lw 2 lc rgb "blue", \
-     "/tmp/ssd_speed.dat" using 1:3 title "Write Speed (MB/s)" with lines lw 2 lc rgb "red"
-pause 1
-reread
-EOF
-
-# Start capturing live data
-while true; do
-    OUTPUT=$(iostat -dxk 1 1 | grep "$DEVICE")
-    if [ -n "$OUTPUT" ]; then
-        COUNT=$((COUNT + 1))
-        READ_SPEED=$(echo "$OUTPUT" | awk '{print $6/1024}')  # Convert kB/s to MB/s
-        WRITE_SPEED=$(echo "$OUTPUT" | awk '{print $7/1024}') # Convert kB/s to MB/s
-        echo "$COUNT $READ_SPEED $WRITE_SPEED" >> /tmp/ssd_speed.dat
-    fi
+# Run iostat every second and log results
+( while true; do
+    iostat -dx 1 1 | awk -v dev="$DEVICE" '$1 == dev {print strftime("%H:%M:%S"), $6, $7}' >> $LOG_FILE
     sleep 1
-done
+done ) &
+
+# Start gnuplot for live plotting
+gnuplot -persist <<-EOF
+    set title "Live SSD Performance"
+    set xlabel "Time"
+    set ylabel "Speed (MB/s)"
+    set yrange [0:*]
+    set key outside
+    set grid
+    set datafile separator " "
+    set xdata time
+    set timefmt "%H:%M:%S"
+    set format x "%H:%M:%S"
+    plot "< tail -n 60 $LOG_FILE" using 1:2 with lines title "Read MB/s", \
+         "< tail -n 60 $LOG_FILE" using 1:3 with lines title "Write MB/s"
+    pause 1
+    reread
+EOF

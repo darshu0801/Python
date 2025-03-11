@@ -1,429 +1,146 @@
 #!/bin/bash
 
-# Log file for data
-LOG_FILE="/tmp/ssd_usage.log"
-DEVICE="nvme0n1"  # Change this to match your SSD device
+# Function to get the OS drive
+get_os_drive() {
+    OS_PART=$(lsblk -o NAME,MOUNTPOINT | grep " /boot/efi" | awk '{print $1}' | tr -d '├ ─')
+    OS_DRIVE=$(echo "$OS_PART" | sed 's/p[0-9]\+$//')
+    echo "/dev/$OS_DRIVE"
+}
 
-# Clear previous data
-echo "" > $LOG_FILE
-
-# Start iostat monitoring
-echo "Monitoring SSD performance... Press Ctrl+C to stop."
-
-# Run iostat every second and log results
-( while true; do
-    iostat -dx 1 1 | awk -v dev="$DEVICE" '$1 == dev {print strftime("%H:%M:%S"), $6, $7}' >> $LOG_FILE
-    sleep 1
-done ) &
-
-# Start gnuplot for live plotting
-gnuplot -persist <<-EOF
-    set title "Live SSD Performance"
-    set xlabel "Time"
-    set ylabel "Speed (MB/s)"
-    set yrange [0:*]
-    set key outside
-    set grid
-    set datafile separator " "
-    set xdata time
-    set timefmt "%H:%M:%S"
-    set format x "%H:%M:%S"
-    plot "< tail -n 60 $LOG_FILE" using 1:2 with lines title "Read MB/s", \
-         "< tail -n 60 $LOG_FILE" using 1:3 with lines title "Write MB/s"
-    pause 1
-    reread
-EOF
+# List available drives for user selection
+echo "Available drives:"
+#DRIVES1=($(lsblk -d -n -o NAME | grep -E "nvme|sd"))  # Store drive names in an array]
+DRIVES=($(nvme list | awk 'NR>2 {print $1}'))  # Store drive names in an array]
 
 
-
-
-
-
-
-
-
-
-
-
-Warning: empty x range [59794:59794], adjusting to [59196.1:60391.9]
-QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
-
-
-
-
-
-
-
-
-
-
-#!/bin/bash
-
-LOG_FILE="/tmp/ssd_usage.log"
-DEVICE="nvme0n1"  # Change to your SSD name
-
-# Clear log file
-echo "" > $LOG_FILE
-
-echo "Monitoring SSD performance... Press Ctrl+C to stop."
-
-while true; do
-    # Get iostat output
-    OUTPUT=$(iostat -dx 1 1 | awk -v dev="$DEVICE" '$1 == dev {print $6, $7}')
-
-    # Get current timestamp
-    TIMESTAMP=$(date '+%H:%M:%S')
-
-    # Ensure data is valid and prevent duplicates
-    if [[ ! -z "$OUTPUT" ]]; then
-        LAST_ENTRY=$(tail -n 1 $LOG_FILE)
-        NEW_ENTRY="$TIMESTAMP $OUTPUT"
-
-        if [[ "$LAST_ENTRY" != "$NEW_ENTRY" ]]; then
-            echo "$NEW_ENTRY" >> $LOG_FILE
-        fi
-    fi
-
-    sleep 1
+# Display drive list
+for i in "${!DRIVES[@]}"; do
+    DRIVE_INFO=$(nvme list | grep "${DRIVES[$i]}")
+    MODEL=$(echo "$DRIVE_INFO" | awk '{print $3, $4, $5, $6}')
+    SIZE=$(echo "$DRIVE_INFO" | awk '{print $11, $12, $13}')
+    echo "$((i+1))) ${DRIVES[$i]} | Model: $MODEL | Size: $SIZE"
 done
 
+# Prompt user to select a drive
+read -p "Select the drive number to run tests on: " CHOICE
 
+# Validate input
+if [[ ! "$CHOICE" =~ ^[0-9]+$ ]] || ((CHOICE < 1 || CHOICE > ${#DRIVES[@]})); then
+    echo "Invalid selection. Exiting."
+    exit 1
+fi
 
+# Set the selected drive
+TARGET_DRIVE="${DRIVES[$((CHOICE-1))]}"
+#echo $TARGET_DRIVE
+OS_DRIVE=$(get_os_drive)
+#echo $OS_DRIVE
 
 
+# Check if the selected drive is the OS drive
+if [[ "$TARGET_DRIVE" == "$(get_os_drive)" ]]; then
+    echo "Error: You are trying to run FIO on the OS drive ($TARGET_DRIVE). Aborting!"
+    exit 1
+fi
 
+echo "Selected drive: $TARGET_DRIVE"
 
 
-set title "Live SSD Performance"
-set xlabel "Time"
-set ylabel "Speed (MB/s)"
-set xdata time
-set timefmt "%H:%M:%S"
-set format x "%H:%M:%S"
-set grid
-set key outside
-set yrange [0:*]
-set xtics rotate by -30
+# Read firmware file location from FW_LOCATION.txt
+if [[ ! -f FW_LOCATION.txt ]]; then
+    echo "Error: FW_LOCATION.txt not found."
+    exit 1
+fi
 
-plot "< tail -n 60 /tmp/ssd_usage.log" using 1:2 with lines title "Read MB/s", \
-     "< tail -n 60 /tmp/ssd_usage.log" using 1:3 with lines title "Write MB/s"
+FW_FILE=$(head -n 1 FW_LOCATION.txt)
 
-pause 1
-reread
+if [[ ! -f "$FW_FILE" ]]; then
+    echo "Error: Firmware file not found at $FW_FILE"
+    exit 1
+fi
 
+echo "Firmware file: $FW_FILE"
 
+TARGET_DRIVE1=$(echo "$TARGET_DRIVE" | sed -E 's|(nvme[0-9]+).*|\1|')
 
+echo "UPDATING THE FW......"
+# Firmware Update
+nvme fw-download $TARGET_DRIVE1 --fw=$FW_FILE --xfer=0x20000
+nvme fw-commit $TARGET_DRIVE1 --slot=0 --action=1
+nvme reset $TARGET_DRIVE1
 
+echo "NVME RESET DONE"
 
+sleep 3
 
+rm -rf RESULT
 
+echo "DELETED RESULT FOLDER"
 
+mkdir RESULT
 
+sleep 3
 
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import psutil
-import time
-from collections import deque
+echo "STARTING WORKLOADS"
 
-# Parameters
-history_length = 60  # Store last 60 seconds of data
+# Run FIO workloads
 
-# Data storage
-timestamps = deque(maxlen=history_length)
-read_speeds = deque(maxlen=history_length)
-write_speeds = deque(maxlen=history_length)
+# SW_SLC
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=1G --time_based --runtime=120s --write_bw_log=RESULT/SW_SLC --log_avg_msec=1000 --output=RESULT/SW_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/SW_SLC.txt
 
-# Get the correct disk name
-ssd_disk = None
-for disk in psutil.disk_partitions():
-    if "nvme" in disk.device or "sd" in disk.device:  # Adjust this for your SSD
-        ssd_disk = disk.device
-        break
+# SR_SLC
+fio --name=SeqRead --rw=read --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=1G --time_based --runtime=300s --write_bw_log=RESULT/SR_SLC --log_avg_msec=1000 --output=RESULT/SR_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/SR_SLC.txt
 
-if not ssd_disk:
-    print("No SSD detected. Check your disk name.")
-    exit(1)
+# RR_SLC
+fio --name=RanRead --rw=randread --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --size=1G --time_based --runtime=120s --write_iops_log=RESULT/RR_SLC --log_avg_msec=1000 --output=RESULT/RR_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/RR_SLC.txt
 
-def update(frame):
-    global timestamps, read_speeds, write_speeds
+# Idle 1
+sleep 120
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/idle.txt
 
-    # Fetch SSD disk usage stats
-    disk_io = psutil.disk_io_counters(perdisk=True)
+# SW_TLC
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=100% --time_based --runtime=120s --write_bw_log=RESULT/SW_TLC1 --log_avg_msec=1000 --output=RESULT/SW_TLC1.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/SW_TLC1.txt
 
-    # Extract read/write speed
-    if ssd_disk in disk_io:
-        read_speed = disk_io[ssd_disk].read_bytes / (1024 * 1024)  # Convert to MB
-        write_speed = disk_io[ssd_disk].write_bytes / (1024 * 1024)  # Convert to MB
-    else:
-        read_speed, write_speed = 0, 0
+# Idle 2
+sleep 300
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/idle.txt
 
-    # Update data
-    timestamps.append(time.strftime('%H:%M:%S'))
-    read_speeds.append(read_speed)
-    write_speeds.append(write_speed)
+# SW_TLC (Long run)
+fio --name=SeqWrite --rw=write --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=100% --time_based --runtime=10000s --write_bw_log=RESULT/SW_TLC --log_avg_msec=1000 --output=RESULT/SW_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/SW_TLC.txt
 
-    # Clear and re-plot
-    ax.clear()
-    ax.plot(timestamps, read_speeds, label="Read Speed (MB/s)", color='b')
-    ax.plot(timestamps, write_speeds, label="Write Speed (MB/s)", color='r')
+# Idle 3
+sleep 300
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/idle.txt
 
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Speed (MB/s)')
-    ax.set_title(f'Live SSD Performance ({ssd_disk})')
-    ax.legend()
-    ax.grid(True)
-    plt.xticks(rotation=45)
+# SR_TLC
+fio --name=SeqRead --rw=read --bs=128k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=1 --size=100% --time_based --runtime=120s --write_bw_log=RESULT/SR_TLC --log_avg_msec=1000 --output=RESULT/SR_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/SR_TLC.txt
 
-# Initialize plot
-fig, ax = plt.subplots(figsize=(10, 5))
-ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
+# RR_TLC
+fio --name=RanRead --rw=randread --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --size=100% --time_based --runtime=120s --write_iops_log=RESULT/RR_TLC --log_avg_msec=1000 --output=RESULT/RR_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/RR_TLC.txt
 
-plt.show()
+# Firmware Update
+nvme fw-download $TARGET_DRIVE1 --fw=$FW_FILE --xfer=0x20000
+nvme fw-commit $TARGET_DRIVE1 --slot=0 --action=1
+nvme reset $TARGET_DRIVE1
 
+echo "NVME RESET DONE"
 
+# RW_SLC
+fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --norandommap --randrepeat=0 --size=1G --time_based --runtime=120s --write_iops_log=RESULT/RW_SLC --log_avg_msec=1000 --output=RESULT/RW_SLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/RW_SLC.txt
 
+# Idle 4
+sleep 120
 
+# RW_TLC
+fio --name=RanWrite --rw=randwrite --bs=4k --ioengine=libaio --iodepth=128 --direct=1 --filename=$TARGET_DRIVE --numjobs=16 --norandommap --randrepeat=0 --size=100% --time_based --runtime=120s --write_iops_log=RESULT/RW_TLC --log_avg_msec=1000 --output=RESULT/RW_TLC.txt
+nvme smart-log $TARGET_DRIVE | grep temperature | tee -a RESULT/RW_TLC.txt
 
-
-
-
-
-
-
-
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import subprocess
-from collections import deque
-
-# Set SSD device name (change if needed)
-SSD_DEVICE = "nvme0n1"  # Change this to your SSD name
-
-# Store the last N data points (e.g., 300 points)
-history_length = 300  
-counter = 1  # Start counter for X-axis
-
-# Data storage
-x_values = deque(maxlen=history_length)
-read_speeds = deque(maxlen=history_length)
-write_speeds = deque(maxlen=history_length)
-
-def get_ssd_stats():
-    """Fetch SSD read/write speeds using iostat -dxm 1 1"""
-    try:
-        result = subprocess.run(
-            ["iostat", "-dxm", "1", "1"], capture_output=True, text=True
-        )
-        lines = result.stdout.split("\n")
-
-        for line in lines:
-            parts = line.split()
-            if len(parts) >= 9 and parts[0] == SSD_DEVICE:
-                read_speed = float(parts[1])  # Read MB/s (Column 2, Index 1)
-                write_speed = float(parts[7])  # Write MB/s (Column 8, Index 7)
-                return read_speed, write_speed
-    except Exception as e:
-        print("Error fetching SSD stats:", e)
-
-    return 0, 0  # Return 0 if iostat fails
-
-def update(frame):
-    """Update the live plot while keeping older data"""
-    global counter
-    read_speed, write_speed = get_ssd_stats()
-
-    # Append new data with incrementing X values
-    x_values.append(counter)
-    read_speeds.append(read_speed)
-    write_speeds.append(write_speed)
-    counter += 1  # Increment X-axis value
-
-    # Clear previous plot and redraw
-    ax.clear()
-    ax.plot(x_values, read_speeds, label="Read MB/s", color='b', linewidth=2)
-    ax.plot(x_values, write_speeds, label="Write MB/s", color='r', linewidth=2)
-
-    # Set labels, title, and formatting
-    ax.set_xlabel('Time (seconds)')
-    ax.set_ylabel('Speed (MB/s)')
-    ax.set_title(f'Live SSD Performance ({SSD_DEVICE})')
-    ax.legend()
-    ax.grid(True)
-
-    # Keep X-axis scrolling
-    ax.set_xlim(max(0, counter - history_length), counter)  
-    plt.xticks(rotation=45)
-
-# Initialize plot
-fig, ax = plt.subplots(figsize=(10, 5))
-ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
-
-plt.show()
-
-
-
-
-
-
-
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import time
-from collections import deque
-
-# Set SSD device name (change if needed)
-SSD_DEVICE = "nvme0n1"  # Change based on your SSD
-STAT_FILE = f"/sys/block/{SSD_DEVICE}/stat"
-
-# Store last 300 seconds of data
-history_length = 300  
-counter = 1  # X-axis counter
-
-# Data storage
-x_values = deque(maxlen=history_length)
-read_speeds = deque(maxlen=history_length)
-write_speeds = deque(maxlen=history_length)
-
-prev_reads, prev_writes = 0, 0  # Track previous values
-
-def get_ssd_stats():
-    """Fetch SSD read/write speeds using /sys/block/<device>/stat"""
-    global prev_reads, prev_writes
-    try:
-        with open(STAT_FILE, "r") as f:
-            stats = f.readline().split()
-            read_sectors = int(stats[2])  # Read sectors
-            write_sectors = int(stats[6])  # Write sectors
-    except Exception as e:
-        print("Error reading SSD stats:", e)
-        return 0, 0
-
-    # Convert sectors to MB (512 bytes per sector)
-    read_MB = (read_sectors - prev_reads) * 512 / (1024 * 1024)
-    write_MB = (write_sectors - prev_writes) * 512 / (1024 * 1024)
-
-    prev_reads, prev_writes = read_sectors, write_sectors
-    return read_MB, write_MB
-
-def update(frame):
-    """Update the live plot while keeping older data"""
-    global counter
-    read_speed, write_speed = get_ssd_stats()
-
-    # Append new data
-    x_values.append(counter)
-    read_speeds.append(read_speed)
-    write_speeds.append(write_speed)
-    counter += 1  
-
-    # Clear and replot
-    ax.clear()
-    ax.plot(x_values, read_speeds, label="Read MB/s", color='b', linewidth=2)
-    ax.plot(x_values, write_speeds, label="Write MB/s", color='r', linewidth=2)
-
-    # Set labels, title, and formatting
-    ax.set_xlabel('Time (seconds)')
-    ax.set_ylabel('Speed (MB/s)')
-    ax.set_title(f'Live SSD Performance ({SSD_DEVICE})')
-    ax.legend()
-    ax.grid(True)
-
-    # Keep X-axis scrolling
-    ax.set_xlim(max(0, counter - history_length), counter)  
-    plt.xticks(rotation=45)
-
-# Initialize plot
-fig, ax = plt.subplots(figsize=(10, 5))
-ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
-
-plt.show()
-
-
-
-
-
-
-
-
-
-
-
-/usr/bin/mandb: can't chmod /var/cache/man/pt/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/pt/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/pt/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/ja/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/ja/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/ja/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/pt_BR/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/pt_BR/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/pt_BR/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/es/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/es/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/es/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/nl/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/nl/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/nl/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/fi/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/fi/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/fi/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/ro/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/ro/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/ro/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/hu/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/hu/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/hu/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/sl/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/sl/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/sl/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/sv/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/sv/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/sv/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/zh_TW/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/zh_TW/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/zh_TW/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/ko/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/ko/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/ko/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/cs/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/cs/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/cs/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/fr.UTF-8/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/fr.UTF-8/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/fr.UTF-8/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/ru/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/ru/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/ru/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/uk/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/uk/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/uk/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/sr/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/sr/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/sr/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/fr.ISO8859-1/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/fr.ISO8859-1/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/fr.ISO8859-1/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/fr/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/fr/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/fr/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/pl/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/pl/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/pl/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/tr/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/tr/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/tr/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/da/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/da/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/da/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/it/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/it/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/it/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/id/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/id/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/id/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/zh_CN/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/zh_CN/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/zh_CN/46252: Permission denied
-/usr/bin/mandb: can't chmod /var/cache/man/de/CACHEDIR.TAG: Operation not permitted
-/usr/bin/mandb: can't remove /var/cache/man/de/CACHEDIR.TAG: Permission denied
-/usr/bin/mandb: fopen /var/cache/man/de/46252: Permission denied
+echo "Script execution completed."

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Check if device name is provided
+if [ -z "$1" ]; then
+    echo "Usage: ./ssd_speed_plot.sh <nvme_device>"
+    echo "Example: ./ssd_speed_plot.sh nvme0n1"
+    exit 1
+fi
+
+DEVICE=$1
+
+# Ensure iostat is installed
+if ! command -v iostat &> /dev/null; then
+    echo "Error: 'iostat' not found! Install it using: sudo apt install sysstat -y"
+    exit 1
+fi
+
+# Capture and log live data
+rm -f /tmp/ssd_speed.dat
+touch /tmp/ssd_speed.dat
+
+COUNT=0
+
+# Start gnuplot in live mode
+gnuplot -persist <<EOF &
+set title "Live SSD Speed Monitoring ($DEVICE)"
+set xlabel "Time (s)"
+set ylabel "Speed (MB/s)"
+set yrange [0:*]
+set grid
+set style data lines
+set key outside
+plot "/tmp/ssd_speed.dat" using 1:2 title "Read Speed (MB/s)" with lines lw 2 lc rgb "blue", \
+     "/tmp/ssd_speed.dat" using 1:3 title "Write Speed (MB/s)" with lines lw 2 lc rgb "red"
+pause 1
+reread
+EOF
+
+# Start capturing live data
+while true; do
+    OUTPUT=$(iostat -dxk 1 1 | grep "$DEVICE")
+    if [ -n "$OUTPUT" ]; then
+        COUNT=$((COUNT + 1))
+        READ_SPEED=$(echo "$OUTPUT" | awk '{print $6/1024}')  # Convert kB/s to MB/s
+        WRITE_SPEED=$(echo "$OUTPUT" | awk '{print $7/1024}') # Convert kB/s to MB/s
+        echo "$COUNT $READ_SPEED $WRITE_SPEED" >> /tmp/ssd_speed.dat
+    fi
+    sleep 1
+done

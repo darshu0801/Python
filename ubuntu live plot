@@ -338,3 +338,92 @@ fig, ax = plt.subplots(figsize=(10, 5))
 ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
 
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+/usr/bin/mandb: can't chmod /var/cache/man/pt/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/pt/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/pt/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/ja/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/ja/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/ja/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/pt_BR/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/pt_BR/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/pt_BR/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/es/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/es/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/es/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/nl/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/nl/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/nl/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/fi/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/fi/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/fi/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/ro/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/ro/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/ro/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/hu/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/hu/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/hu/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/sl/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/sl/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/sl/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/sv/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/sv/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/sv/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/zh_TW/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/zh_TW/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/zh_TW/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/ko/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/ko/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/ko/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/cs/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/cs/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/cs/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/fr.UTF-8/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/fr.UTF-8/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/fr.UTF-8/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/ru/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/ru/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/ru/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/uk/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/uk/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/uk/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/sr/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/sr/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/sr/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/fr.ISO8859-1/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/fr.ISO8859-1/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/fr.ISO8859-1/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/fr/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/fr/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/fr/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/pl/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/pl/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/pl/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/tr/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/tr/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/tr/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/da/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/da/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/da/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/it/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/it/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/it/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/id/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/id/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/id/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/zh_CN/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/zh_CN/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/zh_CN/46252: Permission denied
+/usr/bin/mandb: can't chmod /var/cache/man/de/CACHEDIR.TAG: Operation not permitted
+/usr/bin/mandb: can't remove /var/cache/man/de/CACHEDIR.TAG: Permission denied
+/usr/bin/mandb: fopen /var/cache/man/de/46252: Permission denied

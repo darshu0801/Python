@@ -260,3 +260,81 @@ fig, ax = plt.subplots(figsize=(10, 5))
 ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
 
 plt.show()
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import time
+from collections import deque
+
+# Set SSD device name (change if needed)
+SSD_DEVICE = "nvme0n1"  # Change based on your SSD
+STAT_FILE = f"/sys/block/{SSD_DEVICE}/stat"
+
+# Store last 300 seconds of data
+history_length = 300  
+counter = 1  # X-axis counter
+
+# Data storage
+x_values = deque(maxlen=history_length)
+read_speeds = deque(maxlen=history_length)
+write_speeds = deque(maxlen=history_length)
+
+prev_reads, prev_writes = 0, 0  # Track previous values
+
+def get_ssd_stats():
+    """Fetch SSD read/write speeds using /sys/block/<device>/stat"""
+    global prev_reads, prev_writes
+    try:
+        with open(STAT_FILE, "r") as f:
+            stats = f.readline().split()
+            read_sectors = int(stats[2])  # Read sectors
+            write_sectors = int(stats[6])  # Write sectors
+    except Exception as e:
+        print("Error reading SSD stats:", e)
+        return 0, 0
+
+    # Convert sectors to MB (512 bytes per sector)
+    read_MB = (read_sectors - prev_reads) * 512 / (1024 * 1024)
+    write_MB = (write_sectors - prev_writes) * 512 / (1024 * 1024)
+
+    prev_reads, prev_writes = read_sectors, write_sectors
+    return read_MB, write_MB
+
+def update(frame):
+    """Update the live plot while keeping older data"""
+    global counter
+    read_speed, write_speed = get_ssd_stats()
+
+    # Append new data
+    x_values.append(counter)
+    read_speeds.append(read_speed)
+    write_speeds.append(write_speed)
+    counter += 1  
+
+    # Clear and replot
+    ax.clear()
+    ax.plot(x_values, read_speeds, label="Read MB/s", color='b', linewidth=2)
+    ax.plot(x_values, write_speeds, label="Write MB/s", color='r', linewidth=2)
+
+    # Set labels, title, and formatting
+    ax.set_xlabel('Time (seconds)')
+    ax.set_ylabel('Speed (MB/s)')
+    ax.set_title(f'Live SSD Performance ({SSD_DEVICE})')
+    ax.legend()
+    ax.grid(True)
+
+    # Keep X-axis scrolling
+    ax.set_xlim(max(0, counter - history_length), counter)  
+    plt.xticks(rotation=45)
+
+# Initialize plot
+fig, ax = plt.subplots(figsize=(10, 5))
+ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
+
+plt.show()

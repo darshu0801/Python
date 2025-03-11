@@ -110,3 +110,73 @@ plot "< tail -n 60 /tmp/ssd_usage.log" using 1:2 with lines title "Read MB/s", \
 
 pause 1
 reread
+
+
+
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import psutil
+import time
+from collections import deque
+
+# Parameters
+history_length = 60  # Store last 60 seconds of data
+
+# Data storage
+timestamps = deque(maxlen=history_length)
+read_speeds = deque(maxlen=history_length)
+write_speeds = deque(maxlen=history_length)
+
+# Get the correct disk name
+ssd_disk = None
+for disk in psutil.disk_partitions():
+    if "nvme" in disk.device or "sd" in disk.device:  # Adjust this for your SSD
+        ssd_disk = disk.device
+        break
+
+if not ssd_disk:
+    print("No SSD detected. Check your disk name.")
+    exit(1)
+
+def update(frame):
+    global timestamps, read_speeds, write_speeds
+
+    # Fetch SSD disk usage stats
+    disk_io = psutil.disk_io_counters(perdisk=True)
+
+    # Extract read/write speed
+    if ssd_disk in disk_io:
+        read_speed = disk_io[ssd_disk].read_bytes / (1024 * 1024)  # Convert to MB
+        write_speed = disk_io[ssd_disk].write_bytes / (1024 * 1024)  # Convert to MB
+    else:
+        read_speed, write_speed = 0, 0
+
+    # Update data
+    timestamps.append(time.strftime('%H:%M:%S'))
+    read_speeds.append(read_speed)
+    write_speeds.append(write_speed)
+
+    # Clear and re-plot
+    ax.clear()
+    ax.plot(timestamps, read_speeds, label="Read Speed (MB/s)", color='b')
+    ax.plot(timestamps, write_speeds, label="Write Speed (MB/s)", color='r')
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Speed (MB/s)')
+    ax.set_title(f'Live SSD Performance ({ssd_disk})')
+    ax.legend()
+    ax.grid(True)
+    plt.xticks(rotation=45)
+
+# Initialize plot
+fig, ax = plt.subplots(figsize=(10, 5))
+ani = animation.FuncAnimation(fig, update, interval=1000)  # Update every second
+
+plt.show()

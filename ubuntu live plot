@@ -47,3 +47,66 @@ EOF
 
 Warning: empty x range [59794:59794], adjusting to [59196.1:60391.9]
 QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+
+LOG_FILE="/tmp/ssd_usage.log"
+DEVICE="nvme0n1"  # Change to your SSD name
+
+# Clear log file
+echo "" > $LOG_FILE
+
+echo "Monitoring SSD performance... Press Ctrl+C to stop."
+
+while true; do
+    # Get iostat output
+    OUTPUT=$(iostat -dx 1 1 | awk -v dev="$DEVICE" '$1 == dev {print $6, $7}')
+
+    # Get current timestamp
+    TIMESTAMP=$(date '+%H:%M:%S')
+
+    # Ensure data is valid and prevent duplicates
+    if [[ ! -z "$OUTPUT" ]]; then
+        LAST_ENTRY=$(tail -n 1 $LOG_FILE)
+        NEW_ENTRY="$TIMESTAMP $OUTPUT"
+
+        if [[ "$LAST_ENTRY" != "$NEW_ENTRY" ]]; then
+            echo "$NEW_ENTRY" >> $LOG_FILE
+        fi
+    fi
+
+    sleep 1
+done
+
+
+
+
+
+
+
+
+set title "Live SSD Performance"
+set xlabel "Time"
+set ylabel "Speed (MB/s)"
+set xdata time
+set timefmt "%H:%M:%S"
+set format x "%H:%M:%S"
+set grid
+set key outside
+set yrange [0:*]
+set xtics rotate by -30
+
+plot "< tail -n 60 /tmp/ssd_usage.log" using 1:2 with lines title "Read MB/s", \
+     "< tail -n 60 /tmp/ssd_usage.log" using 1:3 with lines title "Write MB/s"
+
+pause 1
+reread

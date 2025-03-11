@@ -33,3 +33,17 @@ gnuplot -persist <<-EOF
     pause 1
     reread
 EOF
+
+
+
+
+
+
+
+
+
+
+
+
+Warning: empty x range [59794:59794], adjusting to [59196.1:60391.9]
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'

@@ -52,3 +52,77 @@ df.to_excel(log_folder+"\performance.xlsx", index=False)
 
 print('Performance excel generated at', log_folder+"\performance.xlsx",
       'please open the file manually by copying and pasting the path into your file explorer.')
+
+
+
+
+
+
+
+import os
+import pandas as pd
+
+# Define the folder path where log files are stored
+log_folder = input('Please input the directory path where all the excel sheets are present: ')
+
+def extract_second_column(file_path):
+    values = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            parts = line.split()
+            if len(parts) >= 2:
+                a = parts[1]
+                a = a[:-1]
+                values.append(float(a))
+    return values
+
+def average_log_values(log_files):
+    combined_values = []
+    log_data = [extract_second_column(f) for f in log_files]
+    min_length = min(len(v) for v in log_data)  # Ensure equal row count
+
+    for i in range(min_length):
+        avg_value = sum(log_data[j][i] for j in range(len(log_files))) / len(log_files)
+        combined_values.append(avg_value)
+
+    return combined_values
+
+log_order = [
+    "SW_SLC_bw.1.log", "SR_SLC_bw.1.log",
+    [f"RR_SLC_iops.{i}.log" for i in range(1, 17)],
+    "SW_TLC1_bw.1.log", "SW_TLC_bw.1.log", "SR_SLC_bw.1.log",
+    [f"RR_TLC_iops.{i}.log" for i in range(1, 17)],
+    [f"RW_SLC_iops.{i}.log" for i in range(1, 17)],
+    [f"RW_TLC_iops.{i}.log" for i in range(1, 17)]
+]
+
+output_values = []
+sheet_data = {}  # Dictionary to store individual log data
+
+for entry in log_order:
+    if isinstance(entry, list):  # Group of 16 logs to be averaged
+        existing_logs = [os.path.join(log_folder, f) for f in entry if os.path.exists(os.path.join(log_folder, f))]
+        if existing_logs:
+            avg_values = average_log_values(existing_logs)
+            output_values.extend(avg_values)
+            sheet_data[f"Avg_{entry[0].split('.')[0]}"] = avg_values  # Naming sheet based on the first log in the group
+    else:
+        log_path = os.path.join(log_folder, entry)
+        if os.path.exists(log_path):
+            values = extract_second_column(log_path)
+            output_values.extend(values)
+            sheet_data[entry] = values  # Store data for individual sheet
+
+# Save data to Excel with multiple sheets
+output_excel_path = os.path.join(log_folder, "performance.xlsx")
+
+with pd.ExcelWriter(output_excel_path, engine='xlsxwriter') as writer:
+    # First sheet: Combined performance data
+    pd.DataFrame({"Performance": output_values}).to_excel(writer, sheet_name="Combined_Performance", index=False)
+    
+    # Other sheets: Individual log data
+    for sheet_name, values in sheet_data.items():
+        pd.DataFrame({"Performance": values}).to_excel(writer, sheet_name=sheet_name[:31], index=False)  # Sheet name max length = 31
+
+print('Performance excel generated at', output_excel_path,
+      'please open the file manually by copying and pasting the path into your file explorer.')

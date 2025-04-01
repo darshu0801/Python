@@ -1,0 +1,12 @@
+import os import tkinter as tk from tkinter import messagebox
+
+directory = r"C:\Users\test"  # Change this if needed
+
+def get_files(keyword): files_list = [] if os.path.exists(directory): for file in os.listdir(directory): if keyword in file: files_list.append(os.path.join(directory, file)) messagebox.showinfo("Files Found", "\n".join(files_list) if files_list else "No matching files found")
+
+root = tk.Tk() root.title("File Selector") root.geometry("300x200")
+
+tk.Button(root, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35")).pack(pady=10) tk.Button(root, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65")).pack(pady=10)
+
+root.mainloop()
+

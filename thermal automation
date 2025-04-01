@@ -1,35 +1,26 @@
-import os
-import tkinter as tk
-from tkinter import messagebox
+import os import tkinter as tk from tkinter import messagebox
 
 directory = r"C:\Users\test"  # Change this if needed
 
-def get_files(keyword):
-    files_list = []
-    if os.path.exists(directory):
-        for file in os.listdir(directory):
-            if keyword in file:
-                files_list.append(os.path.join(directory, file))
-    messagebox.showinfo("Files Found", "\n".join(files_list) if files_list else "No matching files found")
+def get_files(keyword, button): files_list = [] if os.path.exists(directory): for file in os.listdir(directory): if keyword in file: files_list.append(os.path.join(directory, file))
 
-root = tk.Tk()
-root.title("File Selector")
-root.geometry("300x200")
+button.pack_forget()  # Hide the button after selection
+if files_list:
+    listbox.delete(0, tk.END)
+    for file in files_list:
+        listbox.insert(tk.END, file)
+else:
+    messagebox.showinfo("Files Found", "No matching files found")
 
-tk.Button(root, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35")).pack(pady=10)
-tk.Button(root, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65")).pack(pady=10)
+root = tk.Tk() root.title("File Selector") root.geometry("400x300")
+
+frame = tk.Frame(root) frame.pack(pady=10)
+
+btn_35 = tk.Button(frame, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35", btn_35)) btn_35.pack(pady=5)
+
+btn_65 = tk.Button(frame, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65", btn_65)) btn_65.pack(pady=5)
+
+listbox = tk.Listbox(root, width=50, height=10) listbox.pack(pady=10)
 
 root.mainloop()
-
-
-This GUI will:
-
-Show two buttons, "35Degree" (green) and "65Degree" (red).
-
-On clicking a button, it will search for files containing "35" or "65" in their names inside C:\Users\test.
-
-Display a message box with the found file paths or notify if no files are found.
-
-
-Let me know if you need modifications!
 

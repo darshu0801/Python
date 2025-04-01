@@ -1,26 +1,51 @@
-import os import tkinter as tk from tkinter import messagebox
+import os
+import tkinter as tk
+from tkinter import messagebox
 
 directory = r"C:\Users\test"  # Change this if needed
 
-def get_files(keyword, button): files_list = [] if os.path.exists(directory): for file in os.listdir(directory): if keyword in file: files_list.append(os.path.join(directory, file))
+def get_files(keyword, button):
+    files_list = []
+    if os.path.exists(directory):
+        for file in os.listdir(directory):
+            if keyword in file:
+                files_list.append(os.path.join(directory, file))
+    
+    button.pack_forget()  # Hide the button after selection
+    if files_list:
+        listbox.delete(0, tk.END)
+        for file in files_list:
+            listbox.insert(tk.END, file)
+    else:
+        messagebox.showinfo("Files Found", "No matching files found")
 
-button.pack_forget()  # Hide the button after selection
-if files_list:
-    listbox.delete(0, tk.END)
-    for file in files_list:
-        listbox.insert(tk.END, file)
-else:
-    messagebox.showinfo("Files Found", "No matching files found")
+root = tk.Tk()
+root.title("File Selector")
+root.geometry("400x300")
 
-root = tk.Tk() root.title("File Selector") root.geometry("400x300")
+frame = tk.Frame(root)
+frame.pack(pady=10)
 
-frame = tk.Frame(root) frame.pack(pady=10)
+btn_35 = tk.Button(frame, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35", btn_35))
+btn_35.pack(pady=5)
 
-btn_35 = tk.Button(frame, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35", btn_35)) btn_35.pack(pady=5)
+btn_65 = tk.Button(frame, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65", btn_65))
+btn_65.pack(pady=5)
 
-btn_65 = tk.Button(frame, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65", btn_65)) btn_65.pack(pady=5)
-
-listbox = tk.Listbox(root, width=50, height=10) listbox.pack(pady=10)
+listbox = tk.Listbox(root, width=50, height=10)
+listbox.pack(pady=10)
 
 root.mainloop()
+
+
+Now, when you click a button:
+
+It disappears.
+
+The found file paths are displayed in a list below.
+
+If no files are found, a message box informs you.
+
+
+Let me know if you need any more tweaks!
 

@@ -4,36 +4,28 @@ from tkinter import messagebox
 
 directory = r"C:\Users\test"  # Change this if needed
 
-def get_files(keyword, button):
-    files_list = []
+files_35 = []
+files_65 = []
+
+def get_files(keyword, button, files_list):
+    files_list.clear()
     if os.path.exists(directory):
         for file in os.listdir(directory):
             if keyword in file:
                 files_list.append(os.path.join(directory, file))
     
     button.pack_forget()  # Hide the button after selection
-    if files_list:
-        listbox.delete(0, tk.END)
-        for file in files_list:
-            listbox.insert(tk.END, file)
-    else:
-        messagebox.showinfo("Files Found", "No matching files found")
+    messagebox.showinfo("Files Found", f"Files stored in list: {files_list}" if files_list else "No matching files found")
 
 root = tk.Tk()
 root.title("File Selector")
-root.geometry("400x300")
+root.geometry("300x200")
 
-frame = tk.Frame(root)
-frame.pack(pady=10)
+btn_35 = tk.Button(root, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35", btn_35, files_35))
+btn_35.pack(pady=10)
 
-btn_35 = tk.Button(frame, text="35Degree", bg="green", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("35", btn_35))
-btn_35.pack(pady=5)
-
-btn_65 = tk.Button(frame, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65", btn_65))
-btn_65.pack(pady=5)
-
-listbox = tk.Listbox(root, width=50, height=10)
-listbox.pack(pady=10)
+btn_65 = tk.Button(root, text="65Degree", bg="red", fg="white", font=("Arial", 14), width=12, height=3, command=lambda: get_files("65", btn_65, files_65))
+btn_65.pack(pady=10)
 
 root.mainloop()
 
@@ -42,10 +34,10 @@ Now, when you click a button:
 
 It disappears.
 
-The found file paths are displayed in a list below.
+The file paths are stored in a Python list (files_35 or files_65).
 
-If no files are found, a message box informs you.
+A message box displays the stored list.
 
 
-Let me know if you need any more tweaks!
+Let me know if you need more changes!
 

@@ -82,3 +82,22 @@ for key, value in new_settings.items():
 # Write back
 with open(ini_path, 'w') as file:
     file.writelines(updated_lines)
+
+
+
+
+
+ini_path = r"C:\Path\To\HWiNFO64.INI"
+
+settings = {
+    "SensorOnly": "1",
+    "SensorInterval": "1000",
+    "SmartScanRate": "1",
+    "OpenSystemSummary": "0",
+    "ShowWelcomeAndProgress": "0"
+}
+
+with open(ini_path, 'w') as file:
+    file.write("[Settings]\n")
+    for key, value in settings.items():
+        file.write(f"{key}={value}\n")

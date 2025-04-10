@@ -1,0 +1,39 @@
+import configparser
+
+ini_path = r"C:\Path\To\HWiNFO64.INI"
+fake_section = "DUMMY"
+
+# Read INI with fake section header
+with open(ini_path, 'r') as file:
+    content = file.read()
+    content_with_header = f"[{fake_section}]\n" + content
+
+config = configparser.ConfigParser()
+config.read_string(content_with_header)
+
+# Modify SensorInterval value
+config[fake_section]['SensorInterval'] = '1000'
+
+# Save back without the dummy header
+with open(ini_path, 'w') as file:
+    for key in config[fake_section]:
+        file.write(f"{key}={config[fake_section][key]}\n")
+
+
+
+
+import winreg
+
+key_path = r"Software\HWiNFO64\Sensors"
+value_name = "HotKeyLoggingStart"  # or whatever it is in your registry
+
+vk_code = 0x4C  # 'L'
+modifiers = 0x2  # Ctrl
+combined_value = (modifiers << 16) | vk_code  # (0x2 << 16) | 0x4C = 0x2004C
+
+try:
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE) as key:
+        winreg.SetValueEx(key, value_name, 0, winreg.REG_DWORD, combined_value)
+        print(f"Set hotkey to Ctrl+L (0x{combined_value:X}) successfully.")
+except Exception as e:
+    print("Error:", e)

@@ -37,3 +37,48 @@ try:
         print(f"Set hotkey to Ctrl+L (0x{combined_value:X}) successfully.")
 except Exception as e:
     print("Error:", e)
+
+
+
+
+
+
+
+ini_path = r"C:\Path\To\HWiNFO64.INI"
+
+# Define the key-value pairs to update or add
+new_settings = {
+    "SensorOnly": "1",
+    "SensorInterval": "1000",
+    "SmartScanRate": "1",
+    "OpenSystemSummary": "0",
+    "ShowWelcomeAndProgress": "0"
+}
+
+# Read the existing lines
+with open(ini_path, 'r') as file:
+    lines = file.readlines()
+
+# Process and update
+updated_lines = []
+keys_found = set()
+
+for line in lines:
+    if '=' in line:
+        key, value = line.strip().split('=', 1)
+        if key in new_settings:
+            updated_lines.append(f"{key}={new_settings[key]}\n")
+            keys_found.add(key)
+        else:
+            updated_lines.append(line)
+    else:
+        updated_lines.append(line)
+
+# Add any new keys that were not in the file
+for key, value in new_settings.items():
+    if key not in keys_found:
+        updated_lines.append(f"{key}={value}\n")
+
+# Write back
+with open(ini_path, 'w') as file:
+    file.writelines(updated_lines)

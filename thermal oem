@@ -101,3 +101,71 @@ with open(ini_path, 'w') as file:
     file.write("[Settings]\n")
     for key, value in settings.items():
         file.write(f"{key}={value}\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import subprocess
+import os
+
+def run_cmd(cmd):
+    subprocess.run(cmd, shell=True, check=True)
+
+def set_screen_and_sleep_never():
+    run_cmd("powercfg /change monitor-timeout-ac 0")
+    run_cmd("powercfg /change monitor-timeout-dc 0")
+    run_cmd("powercfg /change standby-timeout-ac 0")
+    run_cmd("powercfg /change standby-timeout-dc 0")
+
+def set_best_performance_mode():
+    run_cmd("powercfg /setactive SCHEME_MIN")
+
+def configure_battery_saver():
+    import winreg as reg
+
+    path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\EnergySaver\Settings"
+    try:
+        with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, path, 0, reg.KEY_SET_VALUE) as key:
+            reg.SetValueEx(key, "EnergySaverPolicy", 0, reg.REG_DWORD, 0)
+            reg.SetValueEx(key, "BatterySaverBrightnessReduction", 0, reg.REG_DWORD, 0)
+            reg.SetValueEx(key, "BatterySaverOnThreshold", 0, reg.REG_DWORD, 0)
+    except PermissionError:
+        print("Run as Administrator to edit battery saver settings in the registry.")
+
+def set_advanced_power_settings():
+    result = subprocess.run("powercfg /getactivescheme", shell=True, capture_output=True, text=True)
+    line = result.stdout.strip()
+    plan_guid = line.split(":")[1].strip().split(' ')[0]
+
+    run_cmd(f"powercfg /setacvalueindex {plan_guid} SUB_DISK DISKIDLE 0")
+    run_cmd(f"powercfg /setdcvalueindex {plan_guid} SUB_DISK DISKIDLE 0")
+    run_cmd(f"powercfg /setacvalueindex {plan_guid} SUB_PCIEXPRESS ASPM 2")
+    run_cmd(f"powercfg /setdcvalueindex {plan_guid} SUB_PCIEXPRESS ASPM 2")
+    run_cmd(f"powercfg /setactive {plan_guid}")
+
+def set_screen_brightness_100():
+    try:
+        import wmi
+        w = wmi.WMI(namespace='wmi')
+        methods = w.WmiMonitorBrightnessMethods()[0]
+        methods.WmiSetBrightness(Brightness=100, Timeout=0)
+    except Exception as e:
+        print(f"Failed to set brightness: {e}")
+
+if __name__ == "__main__":
+    set_screen_and_sleep_never()
+    set_best_performance_mode()
+    configure_battery_saver()
+    set_advanced_power_settings()
+    set_screen_brightness_100()

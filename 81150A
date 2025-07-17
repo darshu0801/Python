@@ -1,0 +1,87 @@
+import pyvisa
+import time
+
+class ClockSignalGenerator:
+    def __init__(self, visa_address):
+        """Initialize the 81150A with the specified VISA address."""
+        self.instrument = None
+        self.rm = None
+        try:
+            # Initialize VISA resource manager
+            self.rm = pyvisa.ResourceManager()
+            self.instrument = self.rm.open_resource(visa_address)
+            self.instrument.timeout = 5000  # Set timeout to 5 seconds
+
+            # Reset and clear errors
+            self.instrument.write('*RST')
+            time.sleep(0.1)  # Wait for reset
+            self.instrument.write('*CLS')
+
+            # Configure square wave on Channel 1
+            self.instrument.write(':FUNC1 SQU')  # Set function to square wave
+            self.instrument.write(':FREQ1 100e6')  # Set frequency to 100 MHz
+            self.instrument.write(':VOLT1 0.8')  # Set amplitude to 800 mV p-p
+            self.instrument.write(':VOLT1:OFFS 0')  # Set offset to 0 V
+
+            # Configure burst mode for 1 ms duration
+            # Number of cycles = 100 MHz * 1 ms = 100,000 cycles
+            self.instrument.write(':FUNC1:MODE BURST')  # Enable burst mode
+            self.instrument.write(':BURS:NCYC 100000')  # Set 100,000 cycles
+            self.instrument.write(':BURS:MODE TRIG')  # Set burst to trigger mode
+            self.instrument.write(':TRIG:SOUR MAN')  # Set trigger source to manual
+
+            # Enable output (remains on, but no signal until triggered)
+            self.instrument.write(':OUTP1 ON')
+
+            print("Instrument initialized. Output is ON. Ready to trigger bursts.")
+
+        except Exception as e:
+            print(f"Initialization error: {str(e)}")
+            self.cleanup()
+
+    def trigger_clock_signal(self):
+        """Trigger a single 1 ms burst of 100 MHz square wave."""
+        if not self.instrument:
+            print("Error: Instrument not initialized.")
+            return False
+        try:
+            # Send manual trigger to generate the burst
+            self.instrument.write(':TRIG:IMM')
+            time.sleep(0.001)  # Wait for the 1 ms burst to complete
+
+            # Check for errors
+            error = self.instrument.query(':SYST:ERR?')
+            if '+0,"No error"' not in error:
+                print(f"Error: {error}")
+                return False
+            print("Burst triggered successfully.")
+            return True
+
+        except Exception as e:
+            print(f"Trigger error: {str(e)}")
+            return False
+
+    def cleanup(self):
+        """Close the instrument and resource manager."""
+        if self.instrument:
+            self.instrument.write(':OUTP1 OFF')  # Turn off output on cleanup
+            self.instrument.close()
+        if self.rm:
+            self.rm.close()
+        print("Instrument connection closed.")
+
+# Example usage
+if __name__ == "__main__":
+    visa_address = 'TCPIP0::192.168.1.100::inst0::INSTR'  # Replace with your VISA address
+    generator = ClockSignalGenerator(visa_address)
+
+    if generator.instrument:
+        try:
+            # Example: Trigger bursts programmatically
+            print("Triggering first burst...")
+            generator.trigger_clock_signal()
+            time.sleep(1)  # Wait 1 second between bursts
+            print("Triggering second burst...")
+            generator.trigger_clock_signal()
+        finally:
+            generator.cleanup()

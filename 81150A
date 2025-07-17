@@ -85,3 +85,44 @@ if __name__ == "__main__":
             generator.trigger_clock_signal()
         finally:
             generator.cleanup()
+
+
+
+
+
+
+
+
+
+
+
+
+
+import pyvisa
+import time
+
+class ClockTrigger81150A:
+    def __init__(self, visa_address="USB0::0x0957::0x0407::MY1234567::INSTR"):
+        self.rm = pyvisa.ResourceManager()
+        self.inst = self.rm.open_resource(visa_address)
+        self._setup()
+
+    def _setup(self):
+        self.inst.write('*RST')
+        self.inst.write(':FUNCtion SQUare')
+        self.inst.write(':FREQuency 100000000')
+        self.inst.write(':VOLTage 0.8')
+        self.inst.write(':VOLTage:OFFSet 0')
+        self.inst.write(':FUNCtion:SQUare:DCYCLe 50')
+        self.inst.write(':OUTPut ON')
+        self.inst.write(':BURSt:MODE TRIG')
+        self.inst.write(':BURSt:NCYCles 100000')  # 100 MHz * 1 ms
+        self.inst.write(':BURSt:STATe ON')
+
+    def trigger(self):
+        self.inst.write(':TRIGger')
+        time.sleep(0.002)  # wait to ensure pulse finishes
+
+    def close(self):
+        self.inst.close()
+        self.rm.close()

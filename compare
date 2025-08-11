@@ -1,0 +1,41 @@
+import pandas as pd
+import openpyxl
+from openpyxl.styles import PatternFill
+
+# File paths
+generated_file = "generated.xlsx"
+compare_file = "compare.xlsx"
+
+# Read into pandas for easy access
+gen_df = pd.read_excel(generated_file, header=None)
+cmp_df = pd.read_excel(compare_file, header=None)
+
+# Load generated file in openpyxl so we can color it directly
+wb = openpyxl.load_workbook(generated_file)
+ws = wb.active
+
+# Define fills
+green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+# Compare C6:H12 (rows 6–12, cols 3–8 in Excel 1-indexed)
+for row in range(6, 13):
+    for col in range(3, 9):
+        gen_val = gen_df.iat[row-1, col-1]
+        cmp_val = cmp_df.iat[row-1, col-1]
+
+        # Skip NA or '-'
+        if str(gen_val).strip().upper() in ["NA", "-"] or str(cmp_val).strip().upper() in ["NA", "-"]:
+            continue
+
+        try:
+            if float(gen_val) > float(cmp_val):
+                ws.cell(row=row, column=col).fill = green_fill
+            else:
+                ws.cell(row=row, column=col).fill = red_fill
+        except ValueError:
+            continue  # Non-numeric cells
+
+# Save back to the same generated file
+wb.save(generated_file)
+print(f"Comparison complete. Colors applied to {generated_file}")

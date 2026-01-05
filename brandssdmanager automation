@@ -8,3 +8,39 @@ if windows:
     win.activate()
 else:
     print("Window not found")
+
+
+
+
+
+import pyautogui
+import pytesseract
+import cv2
+import numpy as np
+
+# Set tesseract path (VERY IMPORTANT)
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+TARGET_TEXT = "Start Test"  # 🔴 change this to the text you want
+
+def move_cursor_to_text(target_text):
+    screenshot = pyautogui.screenshot()
+    img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+    data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
+
+    for i, text in enumerate(data["text"]):
+        if target_text.lower() in text.lower():
+            x = data["left"][i]
+            y = data["top"][i]
+            w = data["width"][i]
+            h = data["height"][i]
+
+            # Move mouse to center of detected text
+            pyautogui.moveTo(x + w // 2, y + h // 2, duration=0.4)
+            print(f"Moved cursor to '{text}'")
+            return
+
+    print("Text not found on screen")
+
+move_cursor_to_text(TARGET_TEXT)

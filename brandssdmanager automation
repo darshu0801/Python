@@ -1,0 +1,29 @@
+import win32gui
+import win32con
+
+WINDOW_TITLE = "BrandSSDManager"  # partial or full window title
+
+def bring_window_to_front(title):
+    def enum_handler(hwnd, results):
+        if win32gui.IsWindowVisible(hwnd):
+            window_text = win32gui.GetWindowText(hwnd)
+            if title.lower() in window_text.lower():
+                results.append(hwnd)
+
+    results = []
+    win32gui.EnumWindows(enum_handler, results)
+
+    if not results:
+        print("Window not found")
+        return
+
+    hwnd = results[0]
+
+    # Restore if minimized
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+    # Bring to front
+    win32gui.SetForegroundWindow(hwnd)
+    print("Window brought to front")
+
+bring_window_to_front(WINDOW_TITLE)

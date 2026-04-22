@@ -129,3 +129,159 @@ def create_gui():
 
 if __name__ == "__main__":
     create_gui()
+
+
+
+
+
+
+
+def compare_excels(file1, file2, log):
+    try:
+        log("Loading files...")
+        df1 = pd.read_excel(file1)
+        df2 = pd.read_excel(file2)
+
+        if df1.shape != df2.shape:
+            raise Exception("Shape mismatch! Row-wise compare not possible.")
+
+        diff_df = pd.DataFrame()
+
+        log("Computing differences (File2 - File1)...")
+        for col in df1.columns:
+            if pd.api.types.is_numeric_dtype(df1[col]):
+                diff_df[col] = df2[col] - df1[col]
+            else:
+                diff_df[col] = ""  # keep blank for non-numeric
+
+        # Keep same column order
+        diff_df = diff_df[df1.columns]
+
+        report = []
+
+        log("Generating detailed report...")
+        for i in range(len(df1)):
+            report.append(f"\n=== Row {i+1} ===")
+            for col in df1.columns:
+                v1, v2 = df1.loc[i, col], df2.loc[i, col]
+
+                if pd.isna(v1) and pd.isna(v2):
+                    continue
+
+                if v1 != v2:
+                    try:
+                        perc = ((v2 - v1) / v1) * 100
+                        report.append(f"{col}: {v1} vs {v2} ({perc:.2f}%)")
+                    except:
+                        report.append(f"{col}: {v1} vs {v2}")
+
+        # ========== WRITE WITHOUT TOUCHING ORIGINAL ==========
+        def append_table(file, original_df, diff_df):
+            from openpyxl import load_workbook
+
+            wb = load_workbook(file)
+            ws = wb.active
+
+            start_row = ws.max_row + 3  # gap after original table
+
+            ws.cell(row=start_row, column=1, value="Difference (File2 - File1)")
+
+            # Write header
+            for j, col in enumerate(diff_df.columns, start=1):
+                ws.cell(row=start_row + 1, column=j, value=col)
+
+            # Write data
+            for i in range(len(diff_df)):
+                for j in range(len(diff_df.columns)):
+                    ws.cell(row=start_row + 2 + i, column=j + 1,
+                            value=diff_df.iloc[i, j])
+
+            wb.save(file)
+
+        log("Appending diff table to both excels...")
+        append_table(file1, df1, diff_df)
+        append_table(file2, df2, diff_df)
+
+        # ========== SAVE REPORT IN BOTH LOCATIONS ==========
+        log("Saving reports in both folders...")
+        report_text = "\n".join(report)
+
+        path1 = os.path.join(os.path.dirname(file1), "comparison_report.txt")
+        path2 = os.path.join(os.path.dirname(file2), "comparison_report.txt")
+
+        with open(path1, "w") as f:
+            f.write(report_text)
+
+        with open(path2, "w") as f:
+            f.write(report_text)
+
+        # ========== CHARTS ==========
+        log("Generating charts...")
+        output_dir = os.path.dirname(file1)
+
+        for col in df1.columns:
+            if pd.api.types.is_numeric_dtype(df1[col]):
+                plt.figure()
+                plt.plot(df1[col], label="File1")
+                plt.plot(df2[col], label="File2")
+                plt.title(col)
+                plt.legend()
+                plt.savefig(os.path.join(output_dir, f"{col}.png"))
+                plt.close()
+
+        log("✅ Done!")
+        messagebox.showinfo("Success", "Comparison complete!")
+
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+
+
+
+
+def append_table(file, original_df, diff_df):
+    from openpyxl import load_workbook
+    from openpyxl.styles import PatternFill
+
+    wb = load_workbook(file)
+    ws = wb.active
+
+    start_row = ws.max_row + 3
+
+    ws.cell(row=start_row, column=1, value="Difference (File2 - File1)")
+
+    # Header
+    for j, col in enumerate(diff_df.columns, start=1):
+        ws.cell(row=start_row + 1, column=j, value=col)
+
+    # Colors
+    green = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    red = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+    # Identify column types
+    perf_keywords = ["read", "write", "mbps", "iops", "throughput"]
+    power_keywords = ["power", "watt"]
+
+    for i in range(len(diff_df)):
+        for j, col in enumerate(diff_df.columns, start=1):
+            val = diff_df.iloc[i, j-1]
+            cell = ws.cell(row=start_row + 2 + i, column=j, value=val)
+
+            if isinstance(val, (int, float)):
+                col_lower = col.lower()
+
+                # PERFORMANCE columns → higher is better
+                if any(k in col_lower for k in perf_keywords):
+                    if val > 0:
+                        cell.fill = green
+                    elif val < 0:
+                        cell.fill = red
+
+                # POWER columns → lower is better
+                elif any(k in col_lower for k in power_keywords):
+                    if val < 0:
+                        cell.fill = green
+                    elif val > 0:
+                        cell.fill = red
+
+    wb.save(file)

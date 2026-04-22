@@ -1,43 +1,41 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import pandas as pd
-import numpy as np
 import os
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 import matplotlib.pyplot as plt
 
-# ================= CORE LOGIC =================
-def compare_excels(file1, file2, key_col, log):
+def compare_excels(file1, file2, log):
     try:
         log("Loading files...")
         df1 = pd.read_excel(file1)
         df2 = pd.read_excel(file2)
 
-        df1.set_index(key_col, inplace=True)
-        df2.set_index(key_col, inplace=True)
+        # Check shape
+        if df1.shape != df2.shape:
+            messagebox.showerror("Error", "Files have different shapes. Cannot compare row-wise.")
+            return
 
-        df1, df2 = df1.align(df2, join="inner", axis=0)
-
-        log("Computing efficiency...")
-        if "Power_W" in df1.columns:
+        log("Computing efficiency (if Power column exists)...")
+        if "Power_W" in df1.columns and "Read_MBps" in df1.columns:
             df1["Efficiency"] = df1["Read_MBps"] / df1["Power_W"]
             df2["Efficiency"] = df2["Read_MBps"] / df2["Power_W"]
 
         diff_mask = pd.DataFrame(False, index=df1.index, columns=df1.columns)
         report = []
 
-        log("Comparing data...")
-        for row in df1.index:
-            report.append(f"\n=== {row} ===")
+        log("Comparing row by row...")
+        for i in range(len(df1)):
+            report.append(f"\n=== Row {i+1} ===")
             for col in df1.columns:
-                v1, v2 = df1.loc[row, col], df2.loc[row, col]
+                v1, v2 = df1.loc[i, col], df2.loc[i, col]
 
                 if pd.isna(v1) and pd.isna(v2):
                     continue
 
                 if v1 != v2:
-                    diff_mask.loc[row, col] = True
+                    diff_mask.loc[i, col] = True
                     try:
                         perc = ((v2 - v1) / v1) * 100
                         report.append(f"{col}: {v1} vs {v2} ({perc:.2f}%)")
@@ -49,17 +47,15 @@ def compare_excels(file1, file2, key_col, log):
         def write(file, df):
             df_out = df.copy()
             df_out["DIFF"] = diff_mask.any(axis=1).map({True: "YES", False: ""})
-            df_out.to_excel(file)
+            df_out.to_excel(file, index=False)
 
             wb = load_workbook(file)
             ws = wb.active
             fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
 
-            for i, r in enumerate(df_out.index, start=2):
-                for j, c in enumerate(df_out.columns, start=2):
-                    if c == "DIFF":
-                        continue
-                    if diff_mask.loc[r, c]:
+            for i in range(2, len(df_out) + 2):
+                for j in range(1, len(df_out.columns)):
+                    if diff_mask.iloc[i-2, j-1]:
                         ws.cell(row=i, column=j).fill = fill
 
             wb.save(file)
@@ -92,14 +88,12 @@ def compare_excels(file1, file2, key_col, log):
         messagebox.showerror("Error", str(e))
 
 
-# ================= GUI =================
 def create_gui():
     root = tk.Tk()
-    root.title("SSD Excel Comparator")
+    root.title("SSD Excel Comparator (Row-wise)")
 
     file1_path = tk.StringVar()
     file2_path = tk.StringVar()
-    key_col = tk.StringVar(value="Test")
 
     def browse1():
         file1_path.set(filedialog.askopenfilename(filetypes=[("Excel", "*.xlsx")]))
@@ -115,9 +109,8 @@ def create_gui():
         if not file1_path.get() or not file2_path.get():
             messagebox.showwarning("Input missing", "Select both files")
             return
-        compare_excels(file1_path.get(), file2_path.get(), key_col.get(), log)
+        compare_excels(file1_path.get(), file2_path.get(), log)
 
-    # Layout
     tk.Label(root, text="File 1").grid(row=0, column=0)
     tk.Entry(root, textvariable=file1_path, width=50).grid(row=0, column=1)
     tk.Button(root, text="Browse", command=browse1).grid(row=0, column=2)
@@ -126,13 +119,10 @@ def create_gui():
     tk.Entry(root, textvariable=file2_path, width=50).grid(row=1, column=1)
     tk.Button(root, text="Browse", command=browse2).grid(row=1, column=2)
 
-    tk.Label(root, text="Key Column").grid(row=2, column=0)
-    tk.Entry(root, textvariable=key_col).grid(row=2, column=1)
-
-    tk.Button(root, text="Run Comparison", command=run, bg="green", fg="white").grid(row=3, column=1)
+    tk.Button(root, text="Run Comparison", command=run, bg="green", fg="white").grid(row=2, column=1)
 
     log_box = tk.Text(root, height=15, width=70)
-    log_box.grid(row=4, column=0, columnspan=3)
+    log_box.grid(row=3, column=0, columnspan=3)
 
     root.mainloop()
 

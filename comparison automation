@@ -28,15 +28,17 @@ def copy_style(src, dst):
 
 
 # =========================================================
-# GENERATE COMPARISON EXCEL
+# GENERATE comparison.xlsx
 # =========================================================
 def generate_comparison_excel(source_file, diff_df, output_file):
 
+    # Copy original excel
     shutil.copy(source_file, output_file)
 
     wb = load_workbook(output_file)
     ws = wb.active
 
+    # Add diff table below original
     start_row = ws.max_row + 4
 
     # =====================================================
@@ -55,7 +57,11 @@ def generate_comparison_excel(source_file, diff_df, output_file):
     for col_idx in range(1, len(diff_df.columns) + 1):
 
         src_cell = ws.cell(row=header_row, column=col_idx)
-        dst_cell = ws.cell(row=start_row + 1, column=col_idx)
+
+        dst_cell = ws.cell(
+            row=start_row + 1,
+            column=col_idx
+        )
 
         dst_cell.value = diff_df.columns[col_idx - 1]
 
@@ -82,7 +88,8 @@ def generate_comparison_excel(source_file, diff_df, output_file):
         "mbps",
         "iops",
         "throughput",
-        "bw"
+        "bw",
+        "bandwidth"
     ]
 
     power_keywords = [
@@ -115,6 +122,10 @@ def generate_comparison_excel(source_file, diff_df, output_file):
             )
 
             value = diff_df.iloc[i, j]
+
+            # Handle NaN
+            if pd.isna(value):
+                value = ""
 
             dst_cell.value = value
 
@@ -160,6 +171,9 @@ def compare_excels(file1, file2, log):
         df1 = pd.read_excel(file1)
         df2 = pd.read_excel(file2)
 
+        # =================================================
+        # VALIDATION
+        # =================================================
         if df1.shape != df2.shape:
 
             raise Exception(
@@ -175,16 +189,29 @@ def compare_excels(file1, file2, log):
 
         for col in df1.columns:
 
-            if pd.api.types.is_numeric_dtype(df1[col]):
+            # Try converting to numeric
+            s1 = pd.to_numeric(
+                df1[col],
+                errors="coerce"
+            )
 
-                diff_df[col] = df2[col] - df1[col]
+            s2 = pd.to_numeric(
+                df2[col],
+                errors="coerce"
+            )
+
+            # Numeric column
+            if s1.notna().sum() > 0:
+
+                diff_df[col] = s2 - s1
 
             else:
 
+                # Keep text columns blank
                 diff_df[col] = ""
 
         # =================================================
-        # TXT REPORT
+        # REPORT
         # =================================================
         log("Generating report...")
 
@@ -204,12 +231,19 @@ def compare_excels(file1, file2, log):
                 if pd.isna(v1) and pd.isna(v2):
                     continue
 
-                if v1 != v2:
+                if str(v1) != str(v2):
 
                     try:
 
-                        diff = v2 - v1
-                        perc = (diff / v1) * 100
+                        n1 = float(v1)
+                        n2 = float(v2)
+
+                        diff = n2 - n1
+
+                        perc = (
+                            (diff / n1) * 100
+                            if n1 != 0 else 0
+                        )
 
                         report_lines.append(
                             f"{col}: "
@@ -227,7 +261,7 @@ def compare_excels(file1, file2, log):
         report_text = "\n".join(report_lines)
 
         # =================================================
-        # SAVE TXT REPORT
+        # SAVE REPORTS
         # =================================================
         folder1 = os.path.dirname(file1)
         folder2 = os.path.dirname(file2)
@@ -282,12 +316,29 @@ def compare_excels(file1, file2, log):
 
         for col in df1.columns:
 
-            if pd.api.types.is_numeric_dtype(df1[col]):
+            s1 = pd.to_numeric(
+                df1[col],
+                errors="coerce"
+            )
+
+            s2 = pd.to_numeric(
+                df2[col],
+                errors="coerce"
+            )
+
+            if s1.notna().sum() > 0:
 
                 plt.figure(figsize=(8, 4))
 
-                plt.plot(df1[col], label="File1")
-                plt.plot(df2[col], label="File2")
+                plt.plot(
+                    s1,
+                    label="File1"
+                )
+
+                plt.plot(
+                    s2,
+                    label="File2"
+                )
 
                 plt.title(col)
 
@@ -357,7 +408,10 @@ def create_gui():
     # =====================================================
     def log(msg):
 
-        log_box.insert(tk.END, msg + "\n")
+        log_box.insert(
+            tk.END,
+            msg + "\n"
+        )
 
         log_box.see(tk.END)
 
@@ -387,36 +441,60 @@ def create_gui():
     tk.Label(
         root,
         text="Excel File 1"
-    ).grid(row=0, column=0, padx=10, pady=10)
+    ).grid(
+        row=0,
+        column=0,
+        padx=10,
+        pady=10
+    )
 
     tk.Entry(
         root,
         textvariable=file1_path,
         width=70
-    ).grid(row=0, column=1)
+    ).grid(
+        row=0,
+        column=1
+    )
 
     tk.Button(
         root,
         text="Browse",
         command=browse1
-    ).grid(row=0, column=2, padx=10)
+    ).grid(
+        row=0,
+        column=2,
+        padx=10
+    )
 
     tk.Label(
         root,
         text="Excel File 2"
-    ).grid(row=1, column=0, padx=10, pady=10)
+    ).grid(
+        row=1,
+        column=0,
+        padx=10,
+        pady=10
+    )
 
     tk.Entry(
         root,
         textvariable=file2_path,
         width=70
-    ).grid(row=1, column=1)
+    ).grid(
+        row=1,
+        column=1
+    )
 
     tk.Button(
         root,
         text="Browse",
         command=browse2
-    ).grid(row=1, column=2, padx=10)
+    ).grid(
+        row=1,
+        column=2,
+        padx=10
+    )
 
     tk.Button(
         root,
@@ -426,7 +504,11 @@ def create_gui():
         fg="white",
         width=25,
         height=2
-    ).grid(row=2, column=1, pady=20)
+    ).grid(
+        row=2,
+        column=1,
+        pady=20
+    )
 
     log_box = tk.Text(
         root,
